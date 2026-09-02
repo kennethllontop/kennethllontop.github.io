@@ -40,7 +40,6 @@ h1 {
     opacity: 0.85;
 }
 
-/* Pill-shaped link, used for nav and back links */
 .pill {
     display: inline-block;
     padding: 0.6rem 1.75rem;
@@ -62,7 +61,7 @@ h1 {
 
 nav { margin-top: 4rem; }
 
-/* ---------- Project pages ---------- */
+/*Project pages*/
 
 .project-title {
     font-size: clamp(1.75rem, 5vw, 3.5rem);
@@ -107,7 +106,6 @@ nav { margin-top: 4rem; }
     line-height: 1.6;
 }
 
-/* Image slots — swap each .slot for an <img> once shots are ready */
 .figures {
     margin-top: 2rem;
     display: grid;
@@ -117,7 +115,6 @@ nav { margin-top: 4rem; }
 
 .figures figure { margin: 0; }
 
-/* Cap height so tall portrait shots don't dominate the page */
 .figures img {
     display: block;
     width: auto;
@@ -128,7 +125,6 @@ nav { margin-top: 4rem; }
     border-radius: 4px;
 }
 
-/* One centered figure rather than a full-width stretch */
 .figures.single {
     grid-template-columns: minmax(0, 44rem);
     justify-content: center;
