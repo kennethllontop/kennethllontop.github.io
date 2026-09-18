@@ -11,11 +11,12 @@ import skimage.io as skio
 from scipy import signal
 
 # name of the input file
-# pictures = ['emir.tif', 'harvesters.tif', 'icon.tif', 'ilemselga.tif', 'melons.tif', 'religous_painting.tif', 'self_portrait.tif', 'siren.tif', 'three_generations.tif', 'wharf.tif']
-pictures = ["church.tif"]
+pictures = ['emir.tif', 'harvesters.tif', 'icon.tif', 'ilemselga.tif', 'melons.tif', 'religous_painting.tif', 'self_portrait.tif', 'siren.tif', 'three_generations.tif', 'wharf.tif', "church.tif"]
+
+# pictures = ['img1.jpg', 'img2.jpg', 'img3.jpg']
 
 for pic in pictures:
-
+    # imname = f'part4_img/{pic}'
     imname = f'CS180_fa2026_proj1_data/{pic}'
     # read in the image
     im = skio.imread(imname)
@@ -127,6 +128,7 @@ for pic in pictures:
 
     # save the image
     fname = f'/Users/kennethllontop/kennethllontop.github.io/proj_1/out_path/out_{pic}'
+    # fname = f'/Users/kennethllontop/kennethllontop.github.io/proj_1/part4_out/out_{pic}.jpg'
     # I had an issue with the type of data I am passing in
 
     # I need to keep values in range [0,1]
