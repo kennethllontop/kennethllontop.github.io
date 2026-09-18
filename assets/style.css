@@ -109,8 +109,12 @@ nav { margin-top: 4rem; }
 .figures {
     margin-top: 2rem;
     display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.5rem 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 40rem) {
+    .figures { grid-template-columns: minmax(0, 1fr); }
 }
 
 .figures figure { margin: 0; }
@@ -146,9 +150,164 @@ nav { margin-top: 4rem; }
 
 figcaption {
     margin-top: 0.75rem;
-    font-size: 1rem;
+    font-size: clamp(1.1rem, 2.2vw, 1.35rem);
     letter-spacing: 0.06em;
     color: var(--cream);
 }
 
 .back { margin-top: 5rem; }
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.nowrap { white-space: nowrap; }
+
+.part code {
+    font-family: 'Forum', 'Times New Roman', serif;
+    font-size: 1em;
+    letter-spacing: 0.04em;
+    color: var(--cream);
+}
+
+/* Odd image count: center the lone figure on the final row */
+.figures:not(.single) > figure:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: calc(50% - 0.75rem);
+    margin-inline: auto;
+}
+
+@media (max-width: 40rem) {
+    .figures:not(.single) > figure:last-child:nth-child(odd) { width: 100%; }
+}
+
+/* Display equations */
+.eq-block {
+    position: relative;
+    max-width: 52rem;
+    margin: 2.5rem auto 0;
+    padding: 1.75rem 2rem 2rem;
+    border: 1px solid rgba(228, 219, 207, 0.45);
+    border-radius: 12px;
+    background-image: linear-gradient(160deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(255, 255, 255, 0.05));
+    box-shadow: 0 14px 34px rgba(60, 66, 44, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.eq-block::before {
+    content: "Normalized Cross-Correlation";
+    display: block;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(228, 219, 207, 0.3);
+    font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.eq {
+    display: block;
+    margin: 0;
+    font-family: 'Forum', 'Times New Roman', serif;
+    font-size: clamp(1.5rem, 4vw, 2.35rem);
+    color: var(--white);
+}
+
+.eq mfrac { padding: 0 0.2em; }
+
+@media (max-width: 40rem) {
+    .eq-block { padding: 1.5rem 1rem; }
+}
+
+.offsets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.6rem;
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    letter-spacing: 0.06em;
+    color: var(--white);
+}
+
+.offset-label {
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+
+.offset-label::after {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin: 0 0.45rem 0 0.4rem;
+    border-radius: 50%;
+    vertical-align: 0.02em;
+}
+
+.offset-label.green::after { background-color: #7f9a5e; }
+.offset-label.red::after   { background-color: #b5654f; }
+
+.part h3 {
+    margin: 2.5rem 0 0;
+    font-weight: 400;
+    font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.steps {
+    max-width: 46rem;
+    margin: 1.25rem auto 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+    text-align: left;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    line-height: 1.6;
+}
+
+.steps li {
+    position: relative;
+    counter-increment: step;
+    padding-left: 2.75rem;
+}
+
+.steps li + li { margin-top: 0.9rem; }
+
+.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 1px solid rgba(228, 219, 207, 0.55);
+    border-radius: 50%;
+    font-size: 0.85em;
+    color: var(--cream);
+}
+
+.part a {
+    color: var(--white);
+    text-decoration-color: rgba(228, 219, 207, 0.6);
+    text-underline-offset: 0.2em;
+    transition: text-decoration-color 0.25s ease;
+}
+
+.part a:hover,
+.part a:focus-visible { text-decoration-color: var(--cream); }
+
+.offsets:only-child { margin-top: 0; }

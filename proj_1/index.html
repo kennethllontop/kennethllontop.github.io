@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project 1: Images of the Russian Empire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Forum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <h1 class="project-title">Project 1: Images of the Russian Empire</h1>
+
+    <img class="crest small" src="../assets/bridge-palms.svg"
+         alt="Vincent Thomas Bridge framed by palm trees" width="496" height="190">
+
+    <div class="parts">
+
+        <section class="part">
+            <h2>Project Description</h2>
+            <p>
+                The overall goal of the project is to extract the three color channels from a
+                digitized Prokudin-Gorskii glass plate image and stack them on top of each other to
+                form a single RGB color image. Note: we assume a simple x, y translation is enough
+                for proper alignment.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 1</p>
+            <h2>Single-scale Alignment</h2>
+            <p>
+                Given the digitized glass plate images, I first extracted the separate color
+                channels: Blue, Green, and Red. Now the goal is to determine how we can best
+                align the different channels to generate a clean RGB image. Thankfully there are multiple ways to align
+                these color channels.
+            </p>
+
+            <h3>My Algorithm</h3>
+            <ol class="steps">
+                <li>Fix one color channel. I fixed the blue color channel.</li>
+                <li>
+                    Given a fixed set of possible displacements, take a different color channel to
+                    your fixed channel and shift it based on your displacements. My fixed set of
+                    displacements was <span class="nowrap">[-15, 15] &times; [-15, 15]</span>.
+                </li>
+                <li>
+                    At each new displacement score (rate) how well the images align. My aligning
+                    metric was using the Normalized Cross-Correlation (NCC). (Explained below)
+                </li>
+                <li>
+                    After searching through all your possible displacements, take the offset with
+                    the best score.
+                </li>
+                <li>
+                    Repeat with the remaining color channel. Note: Your fixed channel should not
+                    change. In this case, I align red to blue and green to blue.
+                </li>
+            </ol>
+
+            <div class="eq-block">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mrow>
+                        <mi>NCC</mi>
+                        <mo form="prefix" stretchy="false">(</mo>
+                        <msub><mi>I</mi><mn>1</mn></msub>
+                        <mo>,</mo>
+                        <msub><mi>I</mi><mn>2</mn></msub>
+                        <mo form="postfix" stretchy="false">)</mo>
+                        <mo>=</mo>
+                        <mfrac>
+                            <mrow>
+                                <msub><mi>I</mi><mn>1</mn></msub>
+                                <mo>&#x2212;</mo>
+                                <mover><msub><mi>I</mi><mn>1</mn></msub><mo>&#xaf;</mo></mover>
+                            </mrow>
+                            <mrow>
+                                <mo stretchy="false">&#x2016;</mo>
+                                <msub><mi>I</mi><mn>1</mn></msub>
+                                <mo>&#x2212;</mo>
+                                <mover><msub><mi>I</mi><mn>1</mn></msub><mo>&#xaf;</mo></mover>
+                                <mo stretchy="false">&#x2016;</mo>
+                            </mrow>
+                        </mfrac>
+                        <mo>&#x22c5;</mo>
+                        <mfrac>
+                            <mrow>
+                                <msub><mi>I</mi><mn>2</mn></msub>
+                                <mo>&#x2212;</mo>
+                                <mover><msub><mi>I</mi><mn>2</mn></msub><mo>&#xaf;</mo></mover>
+                            </mrow>
+                            <mrow>
+                                <mo stretchy="false">&#x2016;</mo>
+                                <msub><mi>I</mi><mn>2</mn></msub>
+                                <mo>&#x2212;</mo>
+                                <mover><msub><mi>I</mi><mn>2</mn></msub><mo>&#xaf;</mo></mover>
+                                <mo stretchy="false">&#x2016;</mo>
+                            </mrow>
+                        </mfrac>
+                    </mrow>
+                </math>
+            </div>
+
+            <p>
+                What this formula is essentially doing is removing any brightness offset by
+                subtracting the mean, and dividing by the norms removes any differences in contrast.
+                What is essentially left over is a measure of how well the two images&rsquo; patterns
+                of light and darkness agree.
+            </p>
+            <p>
+                The naive implementation of this algorithm happened to not work well since the plate
+                borders are black and washed out. This skewed the metric. As shown below.
+            </p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/nocrop_cathedral.jpg" alt="Misaligned composite of cathedral.jpg scored without cropping the plate borders">
+                    <figcaption>Cathedral (No Crop)<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (1, &minus;1)</span><span class="offset"><span class="offset-label red">Red Offset</span> (7, &minus;1)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/nocrop_monastery.jpg" alt="Misaligned composite of monastery.jpg scored without cropping the plate borders">
+                    <figcaption>Monastery (No Crop)<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (&minus;6, 0)</span><span class="offset"><span class="offset-label red">Red Offset</span> (9, 1)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/nocrop_tobolsk.jpg" alt="Misaligned composite of tobolsk.jpg scored without cropping the plate borders">
+                    <figcaption>Tobolsk (No Crop)<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (3, 2)</span><span class="offset"><span class="offset-label red">Red Offset</span> (6, 3)</span></span></figcaption>
+                </figure>
+            </div>
+            <p>
+                In order to get better results I cropped 15% off every edge before scoring. This
+                allowed me to get rid of the plate borders and focus on aligning the actual image.
+                The results are shown below as well as the corresponding best displacement
+                vectors.
+            </p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/out_cathedral.jpg" alt="Aligned color composite of cathedral.jpg">
+                    <figcaption>Cathedral<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (5, 2)</span><span class="offset"><span class="offset-label red">Red Offset</span> (12, 3)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_monastery.jpg" alt="Aligned color composite of monastery.jpg">
+                    <figcaption>Monastery<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (&minus;3, 2)</span><span class="offset"><span class="offset-label red">Red Offset</span> (3, 2)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_tobolsk.jpg" alt="Aligned color composite of tobolsk.jpg">
+                    <figcaption>Tobolsk<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (3, 3)</span><span class="offset"><span class="offset-label red">Red Offset</span> (6, 3)</span></span></figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 2</p>
+            <h2>Multi-Scale Pyramid Alignment with (NCC)</h2>
+            <p>
+                The proposed algorithm in part 1 will become far too expensive to perform for full
+                resolution plates. In order to remedy this issue we will leverage an image pyramid.
+                An image pyramid allows us to perform the alignment on the coarsest images and
+                fine-tune
+                our displacement vector on more fine-grained images. However, since we are
+                downsampling it is important for us to use the appropriate techniques to avoid
+                aliasing.
+            </p>
+
+            <h3>Algorithm</h3>
+            <ol class="steps">
+                <li>
+                    Take the full-resolution image and apply a Gaussian filter. This visually blurs
+                    the image while having the greater effect of preventing aliasing when
+                    subsampling.
+                    I applied a 3&times;3 binomial kernel and convolved it with the image.
+                </li>
+                <li>Subsample the image by 2.</li>
+                <li>
+                    Repeat steps 1 and 2 replacing the full resolution image with the new subsampled
+                    image. I repeated the process until I had a five-level Gaussian pyramid.
+                </li>
+                <li>
+                    Begin aligning the color channels at the coarsest level using the same algorithm
+                    as part 1.
+                </li>
+                <li>
+                    Once you found the best displacement vector, double the estimate to account for
+                    the subsampling. This becomes the starting point for the next finer level, where
+                    only a smaller set of displacements is needed for refinement.
+                </li>
+                <li>Repeat step 5 until you reach the full resolution image.</li>
+            </ol>
+
+            <p>
+                The results are shown below as well as the corresponding best displacement vectors.
+                Each offset is listed as the <span class="nowrap">(row, column)</span> shift applied
+                to that channel to bring it onto the blue channel.
+            </p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/out_church.jpg" alt="Aligned color composite of church.tif">
+                    <figcaption>Church<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (25, 4)</span><span class="offset"><span class="offset-label red">Red Offset</span> (58, &minus;4)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_emir.jpg" alt="Aligned color composite of emir.tif">
+                    <figcaption>Emir<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (49, 24)</span><span class="offset"><span class="offset-label red">Red Offset</span> (64, 44)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_harvesters.jpg" alt="Aligned color composite of harvesters.tif">
+                    <figcaption>Harvesters<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (60, 17)</span><span class="offset"><span class="offset-label red">Red Offset</span> (124, 14)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_icon.jpg" alt="Aligned color composite of icon.tif">
+                    <figcaption>Icon<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (41, 17)</span><span class="offset"><span class="offset-label red">Red Offset</span> (89, 23)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_ilemselga.jpg" alt="Aligned color composite of ilemselga.tif">
+                    <figcaption>Ilemselga<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (40, 7)</span><span class="offset"><span class="offset-label red">Red Offset</span> (130, 11)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_melons.jpg" alt="Aligned color composite of melons.tif">
+                    <figcaption>Melons<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (81, 10)</span><span class="offset"><span class="offset-label red">Red Offset</span> (178, 14)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_religous_painting.jpg" alt="Aligned color composite of religous_painting.tif">
+                    <figcaption>Religious Painting<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (28, 3)</span><span class="offset"><span class="offset-label red">Red Offset</span> (68, 7)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_self_portrait.jpg" alt="Aligned color composite of self_portrait.tif">
+                    <figcaption>Self Portrait<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (79, 29)</span><span class="offset"><span class="offset-label red">Red Offset</span> (176, 37)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_siren.jpg" alt="Aligned color composite of siren.tif">
+                    <figcaption>Siren<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (49, &minus;6)</span><span class="offset"><span class="offset-label red">Red Offset</span> (96, &minus;25)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_three_generations.jpg" alt="Aligned color composite of three_generations.tif">
+                    <figcaption>Three Generations<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (52, 14)</span><span class="offset"><span class="offset-label red">Red Offset</span> (111, 11)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/out_wharf.jpg" alt="Aligned color composite of wharf.tif">
+                    <figcaption>Wharf<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (15, &minus;7)</span><span class="offset"><span class="offset-label red">Red Offset</span> (82, &minus;16)</span></span></figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 3</p>
+            <h2>Emir of Bukhara</h2>
+            <p>
+                This is a unique and challenging image since the color channels for Emir do not
+                have the same brightness values. The robe he is wearing is blue which unfortunately
+                causes the blue channel to brighten up and dulls the green and red channels. NCC
+                cannot correct this because it is not a global shift in brightness but rather a
+                discrepancy caused by the robe. This problem is made worse by using an image pyramid
+                as when we start aligning at the coarse level, we remove the fine-grained details
+                that are consistent throughout the image channels. This causes us to commit to a bad
+                displacement vector. I tried seeing if expanding the set of displacement vectors
+                would improve the result, but not much success was observed. This suggests the issue
+                is not the size of the search window but the metric itself. NCC scored an incorrect
+                displacement highest, so enlarging the search cannot recover the true alignment. We
+                would have to match based on edges or gradients rather than brightness.
+            </p>
+            <div class="figures single">
+                <figure>
+                    <img src="./web/out_emir.jpg" alt="Composite of emir.tif, where the blue robe leaves the red channel visibly misaligned">
+                    <figcaption>Emir<span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (49, 24)</span><span class="offset"><span class="offset-label red">Red Offset</span> (64, 44)</span></span></figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 4</p>
+            <h2>Additional Results</h2>
+            <p>
+                I ran the multi-scale pyramid alignment on 3 more plates from the
+                Prokudin-Gorskii collection. The results are shown below. The magenta look for
+                image 2 is normal and expected, as seen in the
+                <a href="https://www.loc.gov/item/2018679070/" target="_blank" rel="noopener">original
+                plate at the Library of Congress</a>.
+            </p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/extra_img1.jpg" alt="Hillside garden looking out over a wide bay, with sailboats on the water">
+                    <figcaption><span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (6, 1)</span><span class="offset"><span class="offset-label red">Red Offset</span> (12, &minus;1)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/extra_img2.jpg" alt="Woman in a long white dress and hat standing beside a wrought-iron garden gate">
+                    <figcaption><span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (2, 1)</span><span class="offset"><span class="offset-label red">Red Offset</span> (9, 1)</span></span></figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/extra_img3.jpg" alt="Thatched-roof cottage behind a line of laundry, with willows and a pond in the foreground">
+                    <figcaption><span class="offsets"><span class="offset"><span class="offset-label green">Green Offset</span> (3, 2)</span><span class="offset"><span class="offset-label red">Red Offset</span> (12, 4)</span></span></figcaption>
+                </figure>
+            </div>
+        </section>
+
+
+
+    </div>
+
+    <div class="back">
+        <a class="pill" href="../index.html">Back to Portfolio</a>
+    </div>
+</body>
+</html>
