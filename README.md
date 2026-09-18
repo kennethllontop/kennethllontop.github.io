@@ -16,16 +16,16 @@ cd kennethllontop.github.io/proj1
 ```
 Open starter_code.py
 
-# Change the pictures variable to select the images to align from the dataset
+### Change the pictures variable to select the images to align from the dataset
 pictures = ['cathedral.jpg', 'monastery.jpg', 'tobolsk.jpg']
 
-# Change imname to be where the images are
+### Change imname to be where the images are
 imname = f'CS180_fa2026_proj1_data/{pic}'
 
-# Change fname to select the out put destination
+### Change fname to select the out put destination
 fname = f'/Users/kennethllontop/kennethllontop.github.io/proj_1/out_path/out_{pic}.jpg'
 
-# When ready run:
+### When ready run:
 python starter_code.py
 
 ## Multi-scale Alignment
