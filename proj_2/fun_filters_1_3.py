@@ -4,6 +4,7 @@
 import numpy as np
 from scipy.signal import convolve2d # Built-in function
 import cv2 # Using opencv for the grayscale images
+import matplotlib.pyplot as plt
 
 def gaussian_filter(img, kernel): # Copying code from project 1
     blurry_img = convolve2d(img, kernel, mode="same", boundary ="symm") # mode is same to keep the same dim; boundary is symm to not average edges to black
@@ -51,13 +52,30 @@ cv2.imwrite('output_pictures/magnitude_cameraman_binary_blurry.png', edges_mask.
 dog_x = convolve2d(kernel_2d, diff_x, mode='full')
 dog_y = convolve2d(kernel_2d, diff_y, mode='full')
 
+# Showing the filters as images
+filters = [kernel_2d, dog_x, dog_y]
+filter_titles = ['Gaussian', 'DoG x', 'DoG y']
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+for i in range(0, len(filters)):
+    filt = axes[i].imshow(filters[i], cmap='gray', interpolation='nearest') # nearest so each value shows as one block
+    axes[i].set_title(filter_titles[i])
+    axes[i].axis('off')
+    fig.colorbar(filt, ax=axes[i]) # Shows which values are negative and positive
+plt.tight_layout()
+plt.savefig('output_pictures/dog_filters.png', dpi=150)
+plt.close()
+
 #Applying DoG Filter
-result_dog_x = convolve2d(img, diff_x, mode='same')
-result_dog_y = convolve2d(img, diff_y, mode='same')
+result_dog_x = convolve2d(img, dog_x, mode='same')
+result_dog_y = convolve2d(img, dog_y, mode='same')
 
 
-cv2.imwrite('output_pictures/dog_x_cameraman.png', result_dog_x.astype(np.uint8))
-cv2.imwrite('output_pictures/dog_y_cameraman.png', result_dog_y.astype(np.uint8))
+partial_dog_x = (result_dog_x + 255) /2
+partial_dog_y = (result_dog_y + 255) /2
+
+cv2.imwrite('output_pictures/dog_x_cameraman.png', partial_dog_x.astype(np.uint8))
+cv2.imwrite('output_pictures/dog_y_cameraman.png', partial_dog_y.astype(np.uint8))
 
 # Calculating the magnitude
 magnitude_dog = np.sqrt((result_dog_x)**2 + (result_dog_y)**2)
@@ -67,4 +85,12 @@ cv2.imwrite('output_pictures/magnitude_cameraman_dog.png', mag_img_dog.astype(np
 # Binary
 edges_mask_dog = magnitude_dog > 65
 cv2.imwrite('output_pictures/magnitude_cameraman_binary_dog.png', edges_mask_dog.astype(np.uint8) * 255)
+
+# Verifying that blur then difference gives the same result as the DoG filter
+# The blur uses boundary="symm" but the difference operators pad with zeros, so the outer 2 pixels will not match
+b = 2
+print("Max difference in x (ignoring the border):", np.abs(result_diff_x - result_dog_x)[b:-b, b:-b].max())
+print("Max difference in y (ignoring the border):", np.abs(result_diff_y - result_dog_y)[b:-b, b:-b].max())
+print("Same result:", np.allclose(result_diff_x[b:-b, b:-b], result_dog_x[b:-b, b:-b]) and
+                      np.allclose(result_diff_y[b:-b, b:-b], result_dog_y[b:-b, b:-b]))
 
