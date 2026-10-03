@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project 2: Fun with Filters and Frequencies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Forum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <h1 class="project-title">Project 2: Fun with Filters and Frequencies</h1>
+
+    <img class="crest small" src="../assets/bridge-palms.svg"
+         alt="Vincent Thomas Bridge framed by palm trees" width="496" height="190">
+
+    <div class="parts">
+
+        <section class="part">
+            <p class="part-label">Part 1</p>
+            <h2>Fun with Filters</h2>
+            <p>
+                In this part, we will build intuitions about 2D convolutions and filtering. We will
+                begin by using the humble finite difference as our filter in the x and y directions.
+            </p>
+
+            <div class="eq-block" data-label="Finite Difference Operators">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mrow>
+                        <msub><mi>D</mi><mi>x</mi></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow>
+                        <mspace width="2.5em"/>
+                        <msub><mi>D</mi><mi>y</mi></msub><mo>=</mo><msup><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow><mi>T</mi></msup>
+                    </mrow>
+                </math>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 1.1</p>
+            <h2>Convolutions from Scratch!</h2>
+            <p>
+                I implemented 2D convolution from scratch using only NumPy, once with four for loops
+                and once with two. Both flip the kernel first, which is what makes the operation a
+                convolution rather than a cross-correlation.
+            </p>
+
+            <div class="code-block" data-label="Four Loops">
+<pre><code><span class="k">def</span><span class="w"> </span><span class="nf">four_for_loops</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">kernal</span><span class="p">,</span> <span class="n">padding</span><span class="p">):</span>
+    <span class="n">k_height</span><span class="p">,</span> <span class="n">k_width</span> <span class="o">=</span> <span class="n">kernal</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">flipped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">kernal</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">padding</span> <span class="o">==</span> <span class="s1">&#39;same&#39;</span><span class="p">:</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="p">((</span><span class="n">k_height</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),(</span><span class="n">k_width</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">pad</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">padding</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="p">((</span><span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),(</span><span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">pad</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1"># Valid Padding</span>
+
+    <span class="k">for</span> <span class="n">height_idx_img</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">img</span><span class="p">)</span><span class="o">-</span><span class="n">k_height</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">collection_sums</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">width_idx_img</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">img</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">k_width</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">temp_sum</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">height_idx_filter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k_height</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">width_idx_filter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k_width</span><span class="p">):</span>
+                    <span class="n">answer</span> <span class="o">=</span> <span class="n">flipped</span><span class="p">[</span><span class="n">height_idx_filter</span><span class="p">,</span> <span class="n">width_idx_filter</span><span class="p">]</span> <span class="o">*</span> <span class="n">img</span><span class="p">[</span><span class="n">height_idx_img</span> <span class="o">+</span> <span class="n">height_idx_filter</span><span class="p">,</span> <span class="n">width_idx_img</span> <span class="o">+</span> <span class="n">width_idx_filter</span><span class="p">]</span>
+                    <span class="n">temp_sum</span> <span class="o">+=</span> <span class="n">answer</span>
+            <span class="n">collection_sums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_sum</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">collection_sums</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></code></pre>
+            </div>
+
+            <div class="code-block" data-label="Two Loops">
+<pre><code><span class="k">def</span><span class="w"> </span><span class="nf">two_for_loops</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">kernal</span><span class="p">,</span> <span class="n">padding</span><span class="p">):</span>
+    <span class="n">k_height</span><span class="p">,</span> <span class="n">k_width</span> <span class="o">=</span> <span class="n">kernal</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">flipped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">kernal</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">padding</span> <span class="o">==</span> <span class="s1">&#39;same&#39;</span><span class="p">:</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="p">((</span><span class="n">k_height</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),(</span><span class="n">k_width</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">pad</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">padding</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="p">((</span><span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k_height</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),(</span><span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k_width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">pad_width</span> <span class="o">=</span> <span class="n">pad</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_img</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1"># Valid Padding</span>
+
+    <span class="k">for</span> <span class="n">height_idx_img</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">img</span><span class="p">)</span><span class="o">-</span><span class="n">k_height</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">collection_sums</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">width_idx_img</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">img</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">k_width</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Element wise multiplication and then sum</span>
+            <span class="n">patch</span> <span class="o">=</span> <span class="n">img</span><span class="p">[</span><span class="n">height_idx_img</span><span class="p">:</span><span class="n">height_idx_img</span><span class="o">+</span><span class="n">k_height</span><span class="p">,</span> <span class="n">width_idx_img</span><span class="p">:</span><span class="n">width_idx_img</span><span class="o">+</span><span class="n">k_width</span><span class="p">]</span>
+            <span class="n">temp_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">patch</span><span class="o">*</span><span class="n">flipped</span><span class="p">)</span>
+            <span class="n">collection_sums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_sum</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">collection_sums</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></code></pre>
+            </div>
+
+            <h3>Speed Comparison</h3>
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Slowest</p>
+                    <h4>Four Loops</h4>
+                    <p>Takes the longest, since every kernel entry is multiplied and summed one at a time.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Faster</p>
+                    <h4>Two Loops</h4>
+                    <p>Faster, since we used vectorized operations in place of the two inner loops.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Fastest</p>
+                    <h4>SciPy</h4>
+                    <p><code>scipy.signal.convolve2d</code> is the fastest since it is optimized.</p>
+                </div>
+            </div>
+            <p>
+                I verified that both of my implementations match
+                <code>scipy.signal.convolve2d</code> on random images and kernels in every padding
+                mode.
+            </p>
+
+            <h3>Boundary Handling</h3>
+            <p>The boundaries I covered were handled via same, full, and valid padding.</p>
+            <div class="cards">
+                <div class="card">
+                    <h4>Same</h4>
+                    <p>The output has the same size as the input.</p>
+                </div>
+                <div class="card">
+                    <h4>Full</h4>
+                    <p>Add <span class="nowrap">k &minus; 1</span> on each side.</p>
+                </div>
+                <div class="card">
+                    <h4>Valid</h4>
+                    <p>No padding at all.</p>
+                </div>
+            </div>
+
+            <h3>Results</h3>
+            <p>
+                Below is my two-loop convolution applied to a photo of me with a 9&times;9 box
+                filter and both finite difference operators.
+            </p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./output_pictures/box_9_x_9_kenneth.png" alt="Grayscale portrait blurred by a 9 by 9 box filter">
+                    <figcaption>9&times;9 Box Filter</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/diff_x_kenneth.png" alt="Portrait convolved with the x finite difference operator, highlighting vertical edges">
+                    <figcaption>Finite Difference D<sub>x</sub></figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/diff_y_kenneth.png" alt="Portrait convolved with the y finite difference operator, highlighting horizontal edges">
+                    <figcaption>Finite Difference D<sub>y</sub></figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 1.2</p>
+            <h2>Finite Difference Operator</h2>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./output_pictures/diff_x_cameraman.png" alt="Cameraman image convolved with the x finite difference operator">
+                    <figcaption>Partial Derivative in x</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/diff_y_cameraman.png" alt="Cameraman image convolved with the y finite difference operator">
+                    <figcaption>Partial Derivative in y</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman.png" alt="Gradient magnitude of the cameraman image">
+                    <figcaption>Gradient Magnitude</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman_binary.png" alt="Binarized gradient magnitude of the cameraman image, showing edges in white">
+                    <figcaption>Binarized Gradient Magnitude</figcaption>
+                </figure>
+            </div>
+            <p>
+                Then we choose an appropriate threshold to suppress the noise while still showing
+                all the real edges. I used a threshold of 65 on the gradient magnitude.
+            </p>
+
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 1.3</p>
+            <h2>Derivative of Gaussian (DoG) Filter</h2>
+            <p>
+                The results with just the difference operator were rather noisy. Luckily, we have a
+                smoothing operator handy: the Gaussian filter G. We first create a blurred version
+                of the original image by convolving with a Gaussian and repeat the procedure in the
+                previous part, showing the gradient magnitude images and binarized gradient
+                magnitude image. I used a 3&times;3 Gaussian kernel with
+                <span class="nowrap">&sigma; = 0.6</span>.
+            </p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./output_pictures/diff_x_cameraman_blurry.png" alt="Blurred cameraman image convolved with the x finite difference operator">
+                    <figcaption>Partial Derivative in x (Blurred)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/diff_y_camerama_blurry.png" alt="Blurred cameraman image convolved with the y finite difference operator">
+                    <figcaption>Partial Derivative in y (Blurred)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman_blurry.png" alt="Gradient magnitude of the blurred cameraman image">
+                    <figcaption>Gradient Magnitude (Blurred)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman_binary_blurry.png" alt="Binarized gradient magnitude of the blurred cameraman image, with less background speckle">
+                    <figcaption>Binarized Gradient Magnitude (Blurred)</figcaption>
+                </figure>
+            </div>
+            <p>
+                The difference is that noise is minimized in a DoG filter since we blur the image,
+                erasing the high frequencies that caused the noise.
+            </p>
+        </section>
+
+
+        <section class="part">
+            <p class="part-label">Part 2</p>
+            <h2>Fun with Frequencies!</h2>
+            <p>
+                In this part, we think about images in terms of their frequencies. Sharpening,
+                hybrid images, and multiresolution blending all come from separating an image into
+                its low frequencies and its high frequencies.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 2.1</p>
+            <h2>Image &ldquo;Sharpening&rdquo;</h2>
+
+            <h3>Deriving the Unsharp Mask</h3>
+            <p>
+                A blur filter is a low-pass filter: convolving an image <i>f</i> with a Gaussian
+                <i>g</i> keeps its low frequencies and removes the high ones. That means subtracting
+                the blurred image from the original leaves only the high frequencies,
+                <span class="nowrap"><i>f</i> &minus; <i>f</i> &lowast; <i>g</i></span>, which hold
+                the edges and fine detail. To sharpen, I add those high frequencies back in, scaled
+                by &alpha;. Because convolution is linear, the whole process collapses into a single
+                convolution with one filter, the unsharp mask filter, where <i>e</i> is the unit
+                impulse (the identity kernel).
+            </p>
+            <div class="eq-block" data-label="Unsharp Mask Filter">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mtable><mtr><mtd style="text-align:right"><msub><mi>f</mi><mtext>sharp</mtext></msub></mtd><mtd style="text-align:left"><mo>=</mo><mi>f</mi><mo>+</mo><mi>&#x3b1;</mi><mo>(</mo><mi>f</mi><mo>&#x2212;</mo><mi>f</mi><mo>&#x2217;</mo><mi>g</mi><mo>)</mo></mtd></mtr><mtr><mtd></mtd><mtd style="text-align:left"><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><mo>(</mo><mo>(</mo><mn>1</mn><mo>+</mo><mi>&#x3b1;</mi><mo>)</mo><mi>e</mi><mo>&#x2212;</mo><mi>&#x3b1;</mi><mi>g</mi><mo>)</mo></mtd></mtr></mtable>
+                </math>
+            </div>
+            <p>
+                I used a 5&times;5 Gaussian with <span class="nowrap">&sigma; = 0.8</span> and
+                <span class="nowrap">&alpha; = 4</span>, and filtered each color channel
+                separately.
+            </p>
+
+            <h3>Blurred, High Frequencies, and Sharpened</h3>
+            <div class="chart">
+                <p class="chart-head">Original</p>
+                <p class="chart-head">Blurred</p>
+                <p class="chart-head">High Frequencies</p>
+                <p class="chart-head">Sharpened <span class="keep-case">(&alpha; = 4)</span></p>
+                <img src="./pictures/taj.jpg" alt="Taj Mahal, original">
+                <div class="slot">To be added</div>
+                <div class="slot">To be added</div>
+                <img src="./output_pictures/fig_2_1/taj.png" alt="Taj Mahal, sharpened with alpha 4">
+                <img src="./pictures/mexico_kenneth_edith.jpg" alt="Mexico photo, original">
+                <div class="slot">To be added</div>
+                <div class="slot">To be added</div>
+                <img src="./output_pictures/fig_2_1/mexico_kenneth_edith.png" alt="Mexico photo, sharpened with alpha 4">
+                <img src="./pictures/family.jpg" alt="Family photo, original">
+                <div class="slot">To be added</div>
+                <div class="slot">To be added</div>
+                <img src="./output_pictures/fig_2_1/family.png" alt="Family photo, sharpened with alpha 4">
+                <img src="./pictures/house.jpg" alt="House photo, original">
+                <div class="slot">To be added</div>
+                <div class="slot">To be added</div>
+                <img src="./output_pictures/fig_2_1/house.png" alt="House photo, sharpened with alpha 4">
+            </div>
+
+            <h3>Varying the Sharpening Amount</h3>
+            <p>
+                Increasing &alpha; adds more of the high frequencies back. Small values give a
+                subtle boost, while large values overshoot at the edges and start to look grainy and
+                over-processed.
+            </p>
+            <div class="figures cols-4">
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>&alpha; = 1</figcaption>
+                </figure>
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>&alpha; = 2</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/fig_2_1/taj.png" alt="Taj Mahal sharpened with alpha 4">
+                    <figcaption>&alpha; = 4</figcaption>
+                </figure>
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>&alpha; = 8</figcaption>
+                </figure>
+            </div>
+
+            <h3>Evaluation: Blur, Then Sharpen</h3>
+            <p>
+                To evaluate sharpening, I took a sharp image, blurred it with the same Gaussian, and
+                then sharpened the blurred result with <span class="nowrap">&alpha; = 4</span>.
+            </p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./pictures/family_v2.jpg" alt="Sharp original photo of a family at a restaurant table">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/fig_2_1/blur_family_v2.png" alt="The same photo blurred with the Gaussian">
+                    <figcaption>Blurred</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/fig_2_1/family_v2.png" alt="The blurred photo sharpened again with alpha 4">
+                    <figcaption>Re-sharpened</figcaption>
+                </figure>
+            </div>
+            <p>
+                The re-sharpened image is much crisper than the blurred one, and the edges of the
+                faces and hair come back. But it does not recover the original. Blurring removed the
+                finest details, and sharpening can only amplify the high frequencies that survived
+                the blur, not restore the ones that were lost. With
+                <span class="nowrap">&alpha; = 4</span> it also overshoots, so edges are harsher and
+                the contrast is stronger than in the original.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 2.2</p>
+            <h2>Hybrid Images</h2>
+            <p>
+                A hybrid image combines the low frequencies of one image with the high frequencies
+                of another. Up close the high frequencies dominate and you see one image; from far
+                away only the low frequencies are visible and you see the other. I high-pass one
+                image by subtracting its Gaussian blur, low-pass the other with a Gaussian, and add
+                the two.
+            </p>
+            <div class="eq-block" data-label="Hybrid Image">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mrow><msub><mi>I</mi><mtext>hybrid</mtext></msub><mo>=</mo><mo>(</mo><msub><mi>I</mi><mn>1</mn></msub><mo>&#x2212;</mo><msub><mi>I</mi><mn>1</mn></msub><mo>&#x2217;</mo><msub><mi>G</mi><msub><mi>&#x3c3;</mi><mn>1</mn></msub></msub><mo>)</mo><mo>+</mo><msub><mi>I</mi><mn>2</mn></msub><mo>&#x2217;</mo><msub><mi>G</mi><msub><mi>&#x3c3;</mi><mn>2</mn></msub></msub></mrow>
+                </math>
+            </div>
+            <p>
+                The two &sigma; values set the cutoff frequencies. A larger &sigma;<sub>2</sub>
+                removes more detail from the low-pass image, and a smaller &sigma;<sub>1</sub> keeps
+                only the finest edges of the high-pass image.
+            </p>
+
+            <h3>Toothless + Stitch: Full Process</h3>
+            <p>Up close you see Stitch; from far away you see Toothless.</p>
+            <p class="group-label">Original Images</p>
+            <div class="figures">
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/toothless.jpg" alt="Toothless, the low-frequency input">
+                    <figcaption>Toothless (Low Frequencies)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/stitch.jpg" alt="Stitch, the high-frequency input">
+                    <figcaption>Stitch (High Frequencies)</figcaption>
+                </figure>
+            </div>
+            <p class="group-label">Aligned Images</p>
+            <div class="figures">
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>Toothless, Aligned</figcaption>
+                </figure>
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>Stitch, Aligned</figcaption>
+                </figure>
+            </div>
+            <p class="group-label">Fourier Transforms</p>
+            <div class="figures wide">
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/toothless_fft_analysis.png" alt="Log magnitude Fourier transforms of the two inputs, the high-pass and low-pass results, and the hybrid">
+                    <figcaption>Log Magnitude of the Fourier Transform at Each Stage</figcaption>
+                </figure>
+            </div>
+            <p>
+                The low-pass result keeps only the bright region around the center of the spectrum,
+                which holds the low frequencies. The high-pass result suppresses the center and
+                keeps everything else. The hybrid&rsquo;s spectrum contains both.
+            </p>
+            <p class="group-label">Filtered Results</p>
+            <div class="figures">
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>Toothless, Low-Pass</figcaption>
+                </figure>
+                <figure>
+                    <div class="slot">Image to be added</div>
+                    <figcaption>Stitch, High-Pass</figcaption>
+                </figure>
+            </div>
+            <p class="group-label">Cutoff Frequency Choice</p>
+            <p>
+                <span class="todo">Cutoff values to be added:
+                &sigma;<sub>1</sub> = ?, &sigma;<sub>2</sub> = ?</span>
+            </p>
+            <p class="group-label">Final Hybrid</p>
+            <div class="figures">
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/toothless_hybrid.jpg" alt="Hybrid of Toothless and Stitch in color">
+                    <figcaption>Hybrid (Color)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/toothless_hybrid_gray.jpg" alt="Hybrid of Toothless and Stitch in grayscale">
+                    <figcaption>Hybrid (Grayscale)</figcaption>
+                </figure>
+            </div>
+
+            <h3>Derek + Nutmeg</h3>
+            <p>Up close you see Nutmeg; from far away you see Derek.</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/DerekPicture.jpg" alt="Derek, the low-frequency input">
+                    <figcaption>Derek (Low Frequencies)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/nutmeg.jpg" alt="Nutmeg the cat, the high-frequency input">
+                    <figcaption>Nutmeg (High Frequencies)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_hybrid.jpg" alt="Hybrid of Derek and Nutmeg in color">
+                    <figcaption>Hybrid (Color)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_hybrid_gray.jpg" alt="Hybrid of Derek and Nutmeg in grayscale">
+                    <figcaption>Hybrid (Grayscale)</figcaption>
+                </figure>
+            </div>
+
+            <h3>Soup + Empty Plate</h3>
+            <p>Up close you see a bowl of soup; from far away you see an empty plate.</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/empty.jpg" alt="An empty paper plate, the low-frequency input">
+                    <figcaption>Empty Plate (Low Frequencies)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/soup.jpg" alt="A bowl of dumpling soup, the high-frequency input">
+                    <figcaption>Soup (High Frequencies)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/soup_hybrid.jpg" alt="Hybrid of the soup and the empty plate in color">
+                    <figcaption>Hybrid (Color)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/soup_hybrid_gray.jpg" alt="Hybrid of the soup and the empty plate in grayscale">
+                    <figcaption>Hybrid (Grayscale)</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 2.3</p>
+            <h2>Gaussian and Laplacian Stacks</h2>
+            <p>
+                A Gaussian stack repeatedly blurs the image without downsampling, so every level
+                stays the same size. Each level blurs the previous one with
+                <span class="nowrap">&sigma; = 2 &middot; 2<sup><i>i</i> &minus; 1</sup></span>.
+                The Laplacian stack takes the difference between neighboring Gaussian levels, so
+                each Laplacian level holds one band of frequencies, and its last level is the
+                blurriest Gaussian level. Adding up every Laplacian level gives back the original
+                image.
+            </p>
+            <div class="eq-block" data-label="Laplacian Stack">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mrow><msub><mi>L</mi><mi>i</mi></msub><mo>=</mo><msub><mi>G</mi><mi>i</mi></msub><mo>&#x2212;</mo><msub><mi>G</mi><mrow><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub><mspace width="2.5em"/><msub><mi>L</mi><mi>N</mi></msub><mo>=</mo><msub><mi>G</mi><mi>N</mi></msub></mrow>
+                </math>
+            </div>
+            <p>
+                Below are 5-level stacks for the apple and the orange. In each, the top row is the
+                Gaussian stack and the bottom row is the Laplacian stack, with the Laplacian levels
+                normalized for display.
+            </p>
+            <div class="figures wide">
+                <figure>
+                    <img src="./output_pictures/apple_stacks.png" alt="Five-level Gaussian and Laplacian stacks of the apple">
+                    <figcaption>Apple</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/orange_stacks.png" alt="Five-level Gaussian and Laplacian stacks of the orange">
+                    <figcaption>Orange</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part 2.4</p>
+            <h2>Multiresolution Blending (a.k.a. the oraple!)</h2>
+            <p>
+                To blend two images, I build a Laplacian stack for each image and a Gaussian stack
+                for the mask. At each level, the mask&rsquo;s Gaussian level weights the two
+                Laplacian levels, and summing the blended levels gives the final image. Because the
+                mask is blurred more at coarser levels, low frequencies blend over a wide
+                transition while fine details switch over sharply, which hides the seam.
+            </p>
+            <div class="eq-block" data-label="Multiresolution Blending">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mrow><mi>B</mi><mo>=</mo><munderover><mo>&#x2211;</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mi>N</mi></munderover><mo>[</mo><msub><mi>M</mi><mi>i</mi></msub><msubsup><mi>L</mi><mi>i</mi><mi>A</mi></msubsup><mo>+</mo><mo>(</mo><mn>1</mn><mo>&#x2212;</mo><msub><mi>M</mi><mi>i</mi></msub><mo>)</mo><msubsup><mi>L</mi><mi>i</mi><mi>B</mi></msubsup><mo>]</mo></mrow>
+                </math>
+            </div>
+
+            <h3>Results</h3>
+            <p class="group-label">The Oraple &middot; Vertical Mask</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./pictures/apple.jpeg" alt="An apple">
+                    <figcaption>Apple</figcaption>
+                </figure>
+                <figure>
+                    <img src="./pictures/orange.jpeg" alt="An orange">
+                    <figcaption>Orange</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/oraple.jpg" alt="The apple and orange blended along a vertical seam">
+                    <figcaption>Oraple</figcaption>
+                </figure>
+            </div>
+            <p class="group-label">Night + Ocean &middot; Horizontal Mask</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./pictures/night.jpeg" alt="A starry night sky">
+                    <figcaption>Night Sky</figcaption>
+                </figure>
+                <figure>
+                    <img src="./pictures/ocean.jpeg" alt="A glowing blue bioluminescent shoreline">
+                    <figcaption>Ocean</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/night_ocean.jpg" alt="The night sky blended above the glowing ocean">
+                    <figcaption>Night Ocean</figcaption>
+                </figure>
+            </div>
+            <p class="group-label">Blue Shell + Water &middot; Irregular Mask</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./pictures/blue_shell.jpeg" alt="A person reacting in a store with a blue shell overhead">
+                    <figcaption>Blue Shell</figcaption>
+                </figure>
+                <figure>
+                    <img src="./pictures/water.jpeg" alt="Water pouring out of an orange bucket against a blue sky">
+                    <figcaption>Water</figcaption>
+                </figure>
+                <figure>
+                    <img src="./pictures/person_mask.png" alt="Black and white mask outlining the person">
+                    <figcaption>Mask</figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/cold_water.jpg" alt="The person blended under the bucket of pouring water">
+                    <figcaption>Cold Water</figcaption>
+                </figure>
+            </div>
+
+            <h3>Process: Blue Shell + Water</h3>
+            <p>
+                For my favorite result, here is the Laplacian stack of each masked input and of the
+                blend. I used a 7-level stack and a mask of the person that is first blurred with
+                <span class="nowrap">&sigma; = 1</span>.
+            </p>
+            <div class="figures wide">
+                <figure>
+                    <div class="slot" style="aspect-ratio: 5 / 3">Image to be added</div>
+                    <figcaption>Masked Laplacian Stacks and Their Sums</figcaption>
+                </figure>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="back">
+        <a class="pill" href="../index.html">Back to Portfolio</a>
+    </div>
+</body>
+</html>
