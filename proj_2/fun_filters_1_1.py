@@ -67,7 +67,7 @@ def testing():
             assert np.allclose(two_for_loops(img, kernel, mode), expected)
     print("All tests passed")
 
-# testing()
+testing()
 
 # Process img as grayscale
 pic = 'kenneth.jpg'
@@ -84,7 +84,7 @@ box_9_x_9 = np.ones((9,9)) / 81
 diff_x = np.array([[1, 0, -1]])
 diff_y = np.array([[1], [0], [-1]])
 
-# convolve the picture with the box fitler and difference operators
+# convolve the picture with the box filter and difference operators
 
 cv2.imwrite('output_pictures/box_9_x_9_kenneth.png', two_for_loops(gray_img, box_9_x_9, 'same').astype(np.uint8))
 

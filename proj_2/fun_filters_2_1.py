@@ -23,7 +23,7 @@ identity_kernel[k//2, k//2] = 1.0
 # # Unsharp Mask Filter
 # unsharp = (1+alpha) * identity_kernel - alpha * g_kernel_2d
 
-# Process img as grayscale
+# Process img in color
 pictures = ['taj', 'taj', 'taj', 'taj', "mexico_kenneth_edith", 'family', 'house']
 for i in range(len(pictures)):
     pic = pictures[i]

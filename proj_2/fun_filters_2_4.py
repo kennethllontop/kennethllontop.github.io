@@ -1,4 +1,4 @@
-# Gaussian and Laplacian Stacks
+# Multiresolution Blending
 import matplotlib.pyplot as plt
 import numpy as np
 import skimage as sk
@@ -31,7 +31,8 @@ def gaussian_stack(im, sig):
     
 s = 2
 levels = 7
-pictures = ['apple', 'orange']
+# main.py passes the pictures, mask and output name for each blend, otherwise these defaults are used
+pictures = globals().get('pictures', ['apple', 'orange'])
 
 # pictures = ['night', 'ocean']
 
@@ -67,21 +68,26 @@ for pic in pictures:
     l_stack.append(lap_stack)
     g_stack.append(py_images)
 
-# G_stack and L_stack have the images at eahc level for each image
+# G_stack and L_stack have the images at each level for each image
 # Getting the gaussian stack of the mask
 
 height, width = g_stack[0][0].shape[:2]
 mask = np.zeros((height, width, 3))
 
+mask_type = globals().get('mask_type', 'vertical')
+
 # Vertical Mask
-mask[:, :width // 2] = 1.0
+if mask_type == 'vertical':
+    mask[:, :width // 2] = 1.0
 
 # Horizontal Mask
-# mask[:height // 2, :] = 1.0
+if mask_type == 'horizontal':
+    mask[:height // 2, :] = 1.0
 
-# # Human mask
-# mask = skio.imread('./pictures/person_mask.png') / 255.0
-# mask = np.dstack([mask, mask, mask])
+# Human mask
+if mask_type == 'person':
+    mask = skio.imread('./pictures/person_mask.png') / 255.0
+    mask = np.dstack([mask, mask, mask])
 
 # Mask code
 mask = gaussian_stack(mask, 1)
@@ -104,7 +110,8 @@ for i in range(0, levels):
     layer_collections.append(layer)
 
 result = np.clip(sum(layer_collections), 0, 1)
-skio.imsave('output_pictures/oraple.jpg', (result * 255).astype(np.uint8))
+out_name = globals().get('out_name', 'oraple')
+skio.imsave(f'output_pictures/{out_name}.jpg', (result * 255).astype(np.uint8))
 
 
 # Creating the figure
@@ -145,5 +152,5 @@ for row in range(0, len(show_levels) + 1):
         axes[row, col].axis('off')
 
 plt.tight_layout()
-plt.savefig('output_pictures/oraple_laplacian.png', dpi=150)
+plt.savefig(f'output_pictures/{out_name}_laplacian.png', dpi=150)
 plt.close()

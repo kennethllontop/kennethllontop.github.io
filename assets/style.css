@@ -71,6 +71,9 @@ nav { margin-top: 4rem; }
     max-width: 70rem;
     margin: 4rem auto 0;
     display: grid;
+    /* minmax(0, 1fr) lets the column shrink below wide content (code listings,
+       equations) so those scroll internally instead of widening the page */
+    grid-template-columns: minmax(0, 1fr);
     gap: 4.5rem;
 }
 
@@ -167,21 +170,34 @@ nav {
 .nowrap { white-space: nowrap; }
 
 .part code {
-    font-family: 'Forum', 'Times New Roman', serif;
-    font-size: 1em;
-    letter-spacing: 0.04em;
-    color: var(--cream);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    background-color: rgba(86, 92, 67, 0.45);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 0.82em;
+    color: #F4EEE4;
+    white-space: nowrap;
+}
+
+/* Code inside listings inherits the block's monospace setting, not the inline pill */
+.part .code-block code {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    white-space: inherit;
 }
 
 /* Odd image count: center the lone figure on the final row */
-.figures:not(.single) > figure:last-child:nth-child(odd) {
+.figures:not(.single, .wide, .cols-3, .cols-4, .cols-5) > figure:last-child:nth-child(odd) {
     grid-column: 1 / -1;
     width: calc(50% - 0.75rem);
     margin-inline: auto;
 }
 
 @media (max-width: 40rem) {
-    .figures:not(.single) > figure:last-child:nth-child(odd) { width: 100%; }
+    .figures:not(.single, .wide, .cols-3, .cols-4, .cols-5) > figure:last-child:nth-child(odd) { width: 100%; }
 }
 
 /* Display equations */
@@ -202,7 +218,7 @@ nav {
 }
 
 .eq-block::before {
-    content: "Normalized Cross-Correlation";
+    content: attr(data-label);
     display: block;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
@@ -216,7 +232,11 @@ nav {
 .eq {
     display: block;
     margin: 0;
-    font-family: 'Forum', 'Times New Roman', serif;
+    /* MathML needs a font with an OpenType MATH table for correct fraction
+       bars and stretchy delimiters. Forum has none, and lacks U+22C5 (the dot
+       operator), so it renders inconsistently across platforms. */
+    font-family: 'STIX Two Math', 'Latin Modern Math', 'Cambria Math', math,
+                 'Times New Roman', serif;
     font-size: clamp(1.5rem, 4vw, 2.35rem);
     color: var(--white);
 }
@@ -311,3 +331,272 @@ nav {
 .part a:focus-visible { text-decoration-color: var(--cream); }
 
 .offsets:only-child { margin-top: 0; }
+
+/* Code listings */
+.code-block {
+    max-width: 70rem;
+    margin: 2rem auto 0;
+    border: 1px solid rgba(228, 219, 207, 0.35);
+    border-radius: 12px;
+    background-color: #565c43;
+    box-shadow: 0 14px 34px rgba(60, 66, 44, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    text-align: left;
+    overflow: hidden;
+}
+
+.code-block::before {
+    content: attr(data-label);
+    display: block;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid rgba(228, 219, 207, 0.25);
+    font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.code-block pre {
+    margin: 0;
+    padding: 1.25rem 1.5rem 1.5rem;
+    overflow-x: auto;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: clamp(0.75rem, 1.4vw, 0.9rem);
+    line-height: 1.6;
+    color: #EFE8DD;
+    tab-size: 4;
+}
+
+/* Pygments token colors, tuned to the sage/cream palette */
+.code-block .k, .code-block .kn, .code-block .kc, .code-block .ow { color: #F2C98A; }
+.code-block .nf { color: #FFFFFF; font-weight: 600; }
+.code-block .nb, .code-block .bp { color: #C9DDB0; }
+.code-block .mi, .code-block .mf { color: #F0A98A; }
+.code-block .s1, .code-block .s2 { color: #E8D3A8; }
+.code-block .c1, .code-block .c  { color: #B4BA9C; font-style: italic; }
+.code-block .o,  .code-block .p  { color: #D9D1C4; }
+
+/* Comparison cards */
+.cards {
+    max-width: 60rem;
+    margin: 1.5rem auto 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+@media (max-width: 40rem) {
+    .cards { grid-template-columns: minmax(0, 1fr); }
+}
+
+.card {
+    padding: 1.5rem 1.35rem 1.6rem;
+    border: 1px solid rgba(228, 219, 207, 0.45);
+    border-radius: 12px;
+    background-image: linear-gradient(160deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(255, 255, 255, 0.05));
+    box-shadow: 0 10px 26px rgba(60, 66, 44, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.part .card-label {
+    margin: 0 0 0.35rem;
+    font-size: clamp(0.75rem, 1.4vw, 0.85rem);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.card h4 {
+    margin: 0;
+    font-weight: 400;
+    font-size: clamp(1.25rem, 2.6vw, 1.6rem);
+    letter-spacing: 0.06em;
+}
+
+.part .card p:not(.card-label) {
+    max-width: none;
+    margin: 0.7rem 0 0;
+    font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+    line-height: 1.55;
+}
+
+/* Labels above a group of related figures */
+.part .group-label {
+    margin: 2.5rem auto 0;
+    font-size: clamp(0.85rem, 1.6vw, 1rem);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.group-label + .figures { margin-top: 1rem; }
+
+/* Wide multi-panel figures (spectra, stacks) span the full column */
+.figures.wide { grid-template-columns: minmax(0, 1fr); }
+.figures.wide img { max-height: none; }
+
+/* Tall multi-panel figures keep their full height */
+.figures.tall img { max-height: none; }
+
+/* Visible marker for content still to be filled in */
+.todo {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px dashed var(--cream);
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--cream);
+}
+
+/* Rows of three or four related figures */
+.figures.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.figures.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem 1rem; }
+
+@media (max-width: 48rem) {
+    .figures.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 40rem) {
+    .figures.cols-3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Chart: column headings over rows of images, read left to right */
+.chart {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: center;
+}
+
+.part .chart-head {
+    max-width: none;
+    margin: 0;
+    align-self: end;
+    font-size: clamp(0.7rem, 1.5vw, 1rem);
+    letter-spacing: 0.14em;
+    line-height: 1.3;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.chart img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Line captions up across a row: each figure spans an image row and a caption
+   row of a shared subgrid, with images resting directly above their captions */
+.figures.cols-3 > figure,
+.figures.cols-4 > figure,
+.figures.cols-5 > figure {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+}
+
+.figures.cols-3 > figure > img,
+.figures.cols-4 > figure > img,
+.figures.cols-5 > figure > img { align-self: end; }
+
+/* Keep symbols like α lowercase inside uppercase labels */
+.keep-case {
+    text-transform: none;
+    white-space: nowrap;
+}
+
+/* Placeholders inside the narrow chart cells */
+.chart .slot {
+    padding: 0.25rem;
+    font-size: clamp(0.6rem, 1.2vw, 0.8rem);
+    letter-spacing: 0.08em;
+    text-align: center;
+}
+
+/* Box filter: a large matrix with CSS brackets, which render the same with or without a math font */
+.box-eq {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+/* No display override here: math elements lose math layout with inline-block */
+.box-eq .eq {
+    flex: none;
+    font-size: clamp(1.3rem, 3vw, 1.9rem);
+}
+
+.matrix {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: repeat(9, 1.35em);
+    row-gap: 0.1em;
+    padding: 0.25em 0.55em;
+    font-family: 'STIX Two Math', 'Latin Modern Math', 'Cambria Math', math, 'Times New Roman', serif;
+    font-size: clamp(1rem, 2.4vw, 1.5rem);
+    line-height: 1.25;
+    text-align: center;
+    color: var(--white);
+}
+
+.matrix::before,
+.matrix::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0.35em;
+    border: 2px solid currentColor;
+}
+
+.matrix::before { left: 0; border-right: none; }
+.matrix::after  { right: 0; border-left: none; }
+
+/* Formulas used as figure captions */
+figcaption math {
+    font-family: 'STIX Two Math', 'Latin Modern Math', 'Cambria Math', math, 'Times New Roman', serif;
+    font-size: 1.05em;
+    color: var(--white);
+}
+
+/* Short stacked parameter lines, such as the sigma values for each hybrid */
+.part .sigmas {
+    font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+    line-height: 1.8;
+    letter-spacing: 0.03em;
+}
+
+/* Row of five related figures */
+.figures.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5rem 0.75rem; }
+
+@media (max-width: 48rem) {
+    .figures.cols-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 40rem) {
+    .figures.cols-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Box filter and finite difference operators side by side in one panel */
+.filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem 3rem;
+}
+
+.fd-eq {
+    display: flex;
+    flex-direction: column;
+    align-items: center;   /* each operator shrinks to its own width and is centered */
+    gap: 1.25rem;
+}
+
+.fd-eq .eq { font-size: clamp(1.3rem, 3vw, 1.9rem); }

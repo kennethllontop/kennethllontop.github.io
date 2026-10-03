@@ -25,24 +25,15 @@
                 begin by using the humble finite difference as our filter in the x and y directions.
             </p>
 
-            <div class="eq-block" data-label="Finite Difference Operators">
-                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
-                    <mrow>
-                        <msub><mi>D</mi><mi>x</mi></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow>
-                        <mspace width="2.5em"/>
-                        <msub><mi>D</mi><mi>y</mi></msub><mo>=</mo><msup><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow><mi>T</mi></msup>
-                    </mrow>
-                </math>
-            </div>
         </section>
 
         <section class="part">
             <p class="part-label">Part 1.1</p>
             <h2>Convolutions from Scratch!</h2>
             <p>
-                I implemented 2D convolution from scratch using only NumPy, once with four for loops
-                and once with two. Both flip the kernel first, which is what makes the operation a
-                convolution rather than a cross-correlation.
+                I used NumPy to implement 2D convolutions from scratch using four for loops and two. I also
+                made sure to flip the kernel first so the operation is actually a convolution and not a
+                cross-correlation.
             </p>
 
             <div class="code-block" data-label="Four Loops">
@@ -118,13 +109,12 @@
                 </div>
             </div>
             <p>
-                I verified that both of my implementations match
-                <code>scipy.signal.convolve2d</code> on random images and kernels in every padding
-                mode.
+                I verified that both of my implementations matched <code>scipy.signal.convolve2d</code> over
+                random images and kernels in every padding mode.
             </p>
 
             <h3>Boundary Handling</h3>
-            <p>The boundaries I covered were handled via same, full, and valid padding.</p>
+            <p>The boundaries I covered were handled through same, full, and valid padding.</p>
             <div class="cards">
                 <div class="card">
                     <h4>Same</h4>
@@ -142,9 +132,106 @@
 
             <h3>Results</h3>
             <p>
-                Below is my two-loop convolution applied to a photo of me with a 9&times;9 box
-                filter and both finite difference operators.
+                Let's try convolving a picture of me in Hawaii with a 9&times;9 box filter and both finite
+                difference operators, using my two-loop convolution. The box filter blurs the image, while the
+                finite difference filters show us changes in the x direction and y direction for
+                D<sub>x</sub> and D<sub>y</sub> respectively.
             </p>
+
+            <div class="eq-block" data-label="Box Filter and Finite Difference Operators">
+                <div class="filters-row">
+                <div class="box-eq">
+                    <math class="eq" display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>B</mi><mo>=</mo><mfrac><mn>1</mn><mn>81</mn></mfrac></mrow></math>
+                    <span class="matrix" role="img" aria-label="nine by nine matrix of ones">
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                        <span>1</span>
+                    </span>
+                </div>
+                    <div class="fd-eq">
+                        <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>D</mi><mi>x</mi></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                        <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>D</mi><mi>y</mi></msub><mo>=</mo><msup><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></mtd></mtr></mtable><mo>]</mo></mrow><mi>T</mi></msup></mrow></math>
+                    </div>
+                </div>
+            </div>
             <div class="figures cols-3">
                 <figure>
                     <img src="./output_pictures/box_9_x_9_kenneth.png" alt="Grayscale portrait blurred by a 9 by 9 box filter">
@@ -164,27 +251,40 @@
         <section class="part">
             <p class="part-label">Part 1.2</p>
             <h2>Finite Difference Operator</h2>
-            <div class="figures cols-4">
+            <p>
+                We continue by showing the partial derivatives in x and y of the cameraman by once again
+                convolving with the finite difference operators D<sub>x</sub> and D<sub>y</sub>.
+            </p>
+            <div class="figures cols-5">
+                <figure>
+                    <img src="./pictures/cameraman.png" alt="The original cameraman image">
+                    <figcaption><math display="inline" displaystyle="true"><mi>f</mi></math></figcaption>
+                </figure>
                 <figure>
                     <img src="./output_pictures/diff_x_cameraman.png" alt="Cameraman image convolved with the x finite difference operator">
-                    <figcaption>Partial Derivative in x</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mfrac><mrow><mo>&#x2202;</mo><mi>f</mi></mrow><mrow><mo>&#x2202;</mo><mi>x</mi></mrow></mfrac><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><msub><mi>D</mi><mi>x</mi></msub></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/diff_y_cameraman.png" alt="Cameraman image convolved with the y finite difference operator">
-                    <figcaption>Partial Derivative in y</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mfrac><mrow><mo>&#x2202;</mo><mi>f</mi></mrow><mrow><mo>&#x2202;</mo><mi>y</mi></mrow></mfrac><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><msub><mi>D</mi><mi>y</mi></msub></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/magnitude_cameraman.png" alt="Gradient magnitude of the cameraman image">
-                    <figcaption>Gradient Magnitude</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mi>f</mi><mo>&#x2016;</mo><mo>=</mo><msqrt><msup><mrow><mo>(</mo><mfrac><mrow><mo>&#x2202;</mo><mi>f</mi></mrow><mrow><mo>&#x2202;</mo><mi>x</mi></mrow></mfrac><mo>)</mo></mrow><mn>2</mn></msup><mo>+</mo><msup><mrow><mo>(</mo><mfrac><mrow><mo>&#x2202;</mo><mi>f</mi></mrow><mrow><mo>&#x2202;</mo><mi>y</mi></mrow></mfrac><mo>)</mo></mrow><mn>2</mn></msup></msqrt></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/magnitude_cameraman_binary.png" alt="Binarized gradient magnitude of the cameraman image, showing edges in white">
-                    <figcaption>Binarized Gradient Magnitude</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mi>f</mi><mo>&#x2016;</mo><mo>&gt;</mo><mn>65</mn></math></figcaption>
                 </figure>
             </div>
             <p>
-                Then we choose an appropriate threshold to suppress the noise while still showing
-                all the real edges. I used a threshold of 65 on the gradient magnitude.
+                We attempt to convert the gradient magnitude image into an edge image by picking an appropriate
+                threshold to suppress noise while still showing the real edges. I used a threshold of 65 on the
+                gradient magnitude. I used 65 instead of 0.25 because I read the cameraman with pixel values from
+                0 to 255 rather than rescaling them to 0 to 1, so the gradient magnitude is measured in those
+                same units, and 65 out of 255 is about 0.25. With this value I was able to get rid of most of the noise concentrated at
+                the bottom of the picture while still keeping the true edges of the cameraman and the camera.
+                However, details in the background were lost.
             </p>
 
         </section>
@@ -193,34 +293,87 @@
             <p class="part-label">Part 1.3</p>
             <h2>Derivative of Gaussian (DoG) Filter</h2>
             <p>
-                The results with just the difference operator were rather noisy. Luckily, we have a
-                smoothing operator handy: the Gaussian filter G. We first create a blurred version
-                of the original image by convolving with a Gaussian and repeat the procedure in the
-                previous part, showing the gradient magnitude images and binarized gradient
-                magnitude image. I used a 3&times;3 Gaussian kernel with
-                <span class="nowrap">&sigma; = 0.6</span>.
+                As mentioned in the project spec, the results with just the difference operator were rather
+                noisy. Luckily, we have a smoothing operator handy: the Gaussian filter G. We first create a
+                blurred version of the original image by convolving with a Gaussian filter and then repeat the
+                procedure in the previous part, but now on this blurred image. Below I show the partial
+                derivatives, gradient magnitude image, and binarized gradient magnitude image. I used a
+                3&times;3 Gaussian kernel with <span class="nowrap">&sigma; = 0.6</span> to create the
+                Gaussian filter, built with <code>cv2.getGaussianKernel</code> and an outer product with
+                its transpose.
             </p>
             <div class="figures cols-4">
                 <figure>
                     <img src="./output_pictures/diff_x_cameraman_blurry.png" alt="Blurred cameraman image convolved with the x finite difference operator">
-                    <figcaption>Partial Derivative in x (Blurred)</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2217;</mo><msub><mi>D</mi><mi>x</mi></msub></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/diff_y_camerama_blurry.png" alt="Blurred cameraman image convolved with the y finite difference operator">
-                    <figcaption>Partial Derivative in y (Blurred)</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2217;</mo><msub><mi>D</mi><mi>y</mi></msub></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/magnitude_cameraman_blurry.png" alt="Gradient magnitude of the blurred cameraman image">
-                    <figcaption>Gradient Magnitude (Blurred)</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2016;</mo></math></figcaption>
                 </figure>
                 <figure>
                     <img src="./output_pictures/magnitude_cameraman_binary_blurry.png" alt="Binarized gradient magnitude of the blurred cameraman image, with less background speckle">
-                    <figcaption>Binarized Gradient Magnitude (Blurred)</figcaption>
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2016;</mo><mo>&gt;</mo><mn>65</mn></math></figcaption>
                 </figure>
             </div>
             <p>
-                The difference is that noise is minimized in a DoG filter since we blur the image,
-                erasing the high frequencies that caused the noise.
+                There is a notable difference in the final two images. The difference was caused by applying a
+                Gaussian filter that reduced the noise, essentially erasing the very high frequencies. For
+                example, there are fewer white dots in the binary edge image despite using the same
+                threshold.
+            </p>
+
+            <h3>Derivative of Gaussian Filters</h3>
+            <p>
+                Instead of using two convolutions, we can get the result above using only one convolution. We
+                do this by convolving the Gaussian with D<sub>x</sub> and D<sub>y</sub> to get the derivative of
+                Gaussian filters, which are shown below next to the Gaussian itself.
+            </p>
+            <div class="figures single">
+                <figure>
+                    <img src="./output_pictures/dog_filters.png" alt="The 3 by 3 Gaussian kernel and the two derivative of Gaussian filters, with color bars">
+                    <figcaption>Gaussian, DoG x, and DoG y Filters</figcaption>
+                </figure>
+            </div>
+            <p>Convolving the original image once with each DoG filter gives the results below.</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./output_pictures/dog_x_cameraman.png" alt="Cameraman image convolved with the x derivative of Gaussian filter">
+                    <figcaption><math display="inline" displaystyle="true"><mi>f</mi><mo>&#x2217;</mo><msub><mtext>DoG</mtext><mi>x</mi></msub></math></figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/dog_y_cameraman.png" alt="Cameraman image convolved with the y derivative of Gaussian filter">
+                    <figcaption><math display="inline" displaystyle="true"><mi>f</mi><mo>&#x2217;</mo><msub><mtext>DoG</mtext><mi>y</mi></msub></math></figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman_dog.png" alt="Gradient magnitude from the derivative of Gaussian filters">
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2016;</mo></math></figcaption>
+                </figure>
+                <figure>
+                    <img src="./output_pictures/magnitude_cameraman_binary_dog.png" alt="Binarized gradient magnitude from the derivative of Gaussian filters">
+                    <figcaption><math display="inline" displaystyle="true"><mo>&#x2016;</mo><mo>&#x2207;</mo><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2016;</mo><mo>&gt;</mo><mn>65</mn></math></figcaption>
+                </figure>
+            </div>
+            <p>
+                These results should come out to be the same since convolutions are associative.
+            </p>
+            <div class="eq-block" data-label="Associativity of Convolution">
+                <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+                    <mtable><mtr><mtd style="text-align:right"><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2217;</mo><msub><mi>D</mi><mi>x</mi></msub></mtd><mtd style="text-align:left"><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><mo>(</mo><mi>G</mi><mo>&#x2217;</mo><msub><mi>D</mi><mi>x</mi></msub><mo>)</mo><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><msub><mtext>DoG</mtext><mi>x</mi></msub></mtd></mtr><mtr><mtd style="text-align:right"><mo>(</mo><mi>f</mi><mo>&#x2217;</mo><mi>G</mi><mo>)</mo><mo>&#x2217;</mo><msub><mi>D</mi><mi>y</mi></msub></mtd><mtd style="text-align:left"><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><mo>(</mo><mi>G</mi><mo>&#x2217;</mo><msub><mi>D</mi><mi>y</mi></msub><mo>)</mo><mo>=</mo><mi>f</mi><mo>&#x2217;</mo><msub><mtext>DoG</mtext><mi>y</mi></msub></mtd></mtr></mtable>
+                </math>
+            </div>
+            <p>
+                To verify, I compared these results with blurring and then differentiating. Away
+                from the border they agree up to floating-point error, and the binarized edge images
+                are identical. The outer 2 pixels differ because the blur pads the image
+                symmetrically while the difference operators pad with zeros. The DoG gradient
+                magnitude image only looks brighter because each magnitude image is rescaled by its
+                own maximum, and that maximum falls on a border pixel where the two approaches
+                differ.
             </p>
         </section>
 
@@ -229,9 +382,8 @@
             <p class="part-label">Part 2</p>
             <h2>Fun with Frequencies!</h2>
             <p>
-                In this part, we think about images in terms of their frequencies. Sharpening,
-                hybrid images, and multiresolution blending all come from separating an image into
-                its low frequencies and its high frequencies.
+                Sharpening, hybrid images, and multiresolution blending all come from separating an image into
+                its low frequencies and its high frequencies. I will explore all three in this section.
             </p>
         </section>
 
@@ -241,14 +393,14 @@
 
             <h3>Deriving the Unsharp Mask</h3>
             <p>
-                A blur filter is a low-pass filter: convolving an image <i>f</i> with a Gaussian
-                <i>g</i> keeps its low frequencies and removes the high ones. That means subtracting
-                the blurred image from the original leaves only the high frequencies,
-                <span class="nowrap"><i>f</i> &minus; <i>f</i> &lowast; <i>g</i></span>, which hold
-                the edges and fine detail. To sharpen, I add those high frequencies back in, scaled
-                by &alpha;. Because convolution is linear, the whole process collapses into a single
-                convolution with one filter, the unsharp mask filter, where <i>e</i> is the unit
-                impulse (the identity kernel).
+                A blur filter is a low-pass filter. When we convolve an image <i>f</i> with a Gaussian <i>g</i>,
+                what we get is a blurred image. This means we keep the image&rsquo;s low frequencies and remove
+                the high ones. Now, if we subtract the blurred image from the original, what is left is only the
+                high frequencies, <span class="nowrap"><i>f</i> &minus; <i>f</i> &lowast; <i>g</i></span>, which
+                hold edges and other fine detail. To sharpen an image, I add those high frequencies back in,
+                scaled by &alpha;. Not only is convolution associative, but it is also linear. This collapses the
+                whole process into a single convolution with one filter, the unsharp mask filter, where <i>e</i>
+                is the unit impulse (the identity kernel).
             </p>
             <div class="eq-block" data-label="Unsharp Mask Filter">
                 <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
@@ -262,27 +414,32 @@
             </p>
 
             <h3>Blurred, High Frequencies, and Sharpened</h3>
+            <p>
+                Below are examples of me using the unsharp mask filter on the Taj Mahal, my sister and me on a
+                trip to Mexico, my mom, my sister, and me cooking in Peru, and a random house. Note: High
+                frequencies can be negative, so they are shown shifted up by 128 so that zero is mid-gray.
+            </p>
             <div class="chart">
                 <p class="chart-head">Original</p>
                 <p class="chart-head">Blurred</p>
                 <p class="chart-head">High Frequencies</p>
                 <p class="chart-head">Sharpened <span class="keep-case">(&alpha; = 4)</span></p>
                 <img src="./pictures/taj.jpg" alt="Taj Mahal, original">
-                <div class="slot">To be added</div>
-                <div class="slot">To be added</div>
-                <img src="./output_pictures/fig_2_1/taj.png" alt="Taj Mahal, sharpened with alpha 4">
+                <img src="./output_pictures/fig_2_1/blur_taj.png" alt="Taj Mahal, blurred with the Gaussian">
+                <img src="./output_pictures/fig_2_1/hf_taj.png" alt="Taj Mahal, high frequencies shifted to mid-gray">
+                <img src="./output_pictures/fig_2_1/taj_alpha4.png" alt="Taj Mahal, sharpened with alpha 4">
                 <img src="./pictures/mexico_kenneth_edith.jpg" alt="Mexico photo, original">
-                <div class="slot">To be added</div>
-                <div class="slot">To be added</div>
-                <img src="./output_pictures/fig_2_1/mexico_kenneth_edith.png" alt="Mexico photo, sharpened with alpha 4">
+                <img src="./output_pictures/fig_2_1/blur_mexico_kenneth_edith.png" alt="Mexico photo, blurred with the Gaussian">
+                <img src="./output_pictures/fig_2_1/hf_mexico_kenneth_edith.png" alt="Mexico photo, high frequencies shifted to mid-gray">
+                <img src="./output_pictures/fig_2_1/mexico_kenneth_edith_alpha4.png" alt="Mexico photo, sharpened with alpha 4">
                 <img src="./pictures/family.jpg" alt="Family photo, original">
-                <div class="slot">To be added</div>
-                <div class="slot">To be added</div>
-                <img src="./output_pictures/fig_2_1/family.png" alt="Family photo, sharpened with alpha 4">
+                <img src="./output_pictures/fig_2_1/blur_family.png" alt="Family photo, blurred with the Gaussian">
+                <img src="./output_pictures/fig_2_1/hf_family.png" alt="Family photo, high frequencies shifted to mid-gray">
+                <img src="./output_pictures/fig_2_1/family_alpha4.png" alt="Family photo, sharpened with alpha 4">
                 <img src="./pictures/house.jpg" alt="House photo, original">
-                <div class="slot">To be added</div>
-                <div class="slot">To be added</div>
-                <img src="./output_pictures/fig_2_1/house.png" alt="House photo, sharpened with alpha 4">
+                <img src="./output_pictures/fig_2_1/blur_house.png" alt="House photo, blurred with the Gaussian">
+                <img src="./output_pictures/fig_2_1/hf_house.png" alt="House photo, high frequencies shifted to mid-gray">
+                <img src="./output_pictures/fig_2_1/house_alpha4.png" alt="House photo, sharpened with alpha 4">
             </div>
 
             <h3>Varying the Sharpening Amount</h3>
@@ -293,27 +450,29 @@
             </p>
             <div class="figures cols-4">
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./output_pictures/fig_2_1/taj_alpha1.png" alt="Taj Mahal sharpened with alpha 1">
                     <figcaption>&alpha; = 1</figcaption>
                 </figure>
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./output_pictures/fig_2_1/taj_alpha2.png" alt="Taj Mahal sharpened with alpha 2">
                     <figcaption>&alpha; = 2</figcaption>
                 </figure>
                 <figure>
-                    <img src="./output_pictures/fig_2_1/taj.png" alt="Taj Mahal sharpened with alpha 4">
+                    <img src="./output_pictures/fig_2_1/taj_alpha4.png" alt="Taj Mahal sharpened with alpha 4">
                     <figcaption>&alpha; = 4</figcaption>
                 </figure>
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./output_pictures/fig_2_1/taj_alpha8.png" alt="Taj Mahal sharpened with alpha 8">
                     <figcaption>&alpha; = 8</figcaption>
                 </figure>
             </div>
 
             <h3>Evaluation: Blur, Then Sharpen</h3>
             <p>
-                To evaluate sharpening, I took a sharp image, blurred it with the same Gaussian, and
-                then sharpened the blurred result with <span class="nowrap">&alpha; = 4</span>.
+                To evaluate sharpening, I took a sharp image of my family eating Peruvian food, blurred it with
+                the same Gaussian (<span class="nowrap">5&times;5</span> Gaussian with
+                <span class="nowrap">&sigma; = 0.8</span>), and then sharpened the blurred result with
+                <span class="nowrap">&alpha; = 4</span>.
             </p>
             <div class="figures cols-3">
                 <figure>
@@ -330,12 +489,10 @@
                 </figure>
             </div>
             <p>
-                The re-sharpened image is much crisper than the blurred one, and the edges of the
-                faces and hair come back. But it does not recover the original. Blurring removed the
-                finest details, and sharpening can only amplify the high frequencies that survived
-                the blur, not restore the ones that were lost. With
-                <span class="nowrap">&alpha; = 4</span> it also overshoots, so edges are harsher and
-                the contrast is stronger than in the original.
+                The re-sharpened image is much crisper than the blurred one. I think the most apparent change is
+                on the faces of my sister, my mom, and me. However, it does not fully recover the original image.
+                Blurring is a low pass filter, so it removed some of the finer details that cannot be recovered,
+                since sharpening only amplifies the high frequencies that survived the blur.
             </p>
         </section>
 
@@ -343,11 +500,12 @@
             <p class="part-label">Part 2.2</p>
             <h2>Hybrid Images</h2>
             <p>
-                A hybrid image combines the low frequencies of one image with the high frequencies
-                of another. Up close the high frequencies dominate and you see one image; from far
-                away only the low frequencies are visible and you see the other. I high-pass one
-                image by subtracting its Gaussian blur, low-pass the other with a Gaussian, and add
-                the two.
+                A hybrid image combines the low frequencies of one image with the high frequencies of another.
+                Up close the high frequencies dominate and you should see mainly one image, but from far away
+                only the low frequencies are visible, so you see the other image. In order to get the high-pass
+                frequencies, I get one image and subtract the Gaussian blur of that image. To get the low-pass
+                frequencies of the other image, all I need to do is apply a Gaussian filter. Lastly, to end up
+                with the hybrid image, I just add the two.
             </p>
             <div class="eq-block" data-label="Hybrid Image">
                 <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
@@ -361,7 +519,10 @@
             </p>
 
             <h3>Toothless + Stitch: Full Process</h3>
-            <p>Up close you see Stitch; from far away you see Toothless.</p>
+            <p>
+                I LOVE TOOTHLESS AND STITCH, so this is the hybrid image I decided to show the full process for.
+                You should be able to see Stitch up close and Toothless far away.
+            </p>
             <p class="group-label">Original Images</p>
             <div class="figures">
                 <figure>
@@ -376,11 +537,11 @@
             <p class="group-label">Aligned Images</p>
             <div class="figures">
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/toothless_aligned.jpg" alt="Toothless after alignment">
                     <figcaption>Toothless, Aligned</figcaption>
                 </figure>
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/stitch_aligned.jpg" alt="Stitch after alignment">
                     <figcaption>Stitch, Aligned</figcaption>
                 </figure>
             </div>
@@ -399,18 +560,28 @@
             <p class="group-label">Filtered Results</p>
             <div class="figures">
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/toothless_lp.jpg" alt="Toothless low-pass filtered with the Gaussian">
                     <figcaption>Toothless, Low-Pass</figcaption>
                 </figure>
                 <figure>
-                    <div class="slot">Image to be added</div>
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/stitch_hp.jpg" alt="Stitch high-pass filtered, shown on a mid-gray background">
                     <figcaption>Stitch, High-Pass</figcaption>
                 </figure>
             </div>
-            <p class="group-label">Cutoff Frequency Choice</p>
             <p>
-                <span class="todo">Cutoff values to be added:
-                &sigma;<sub>1</sub> = ?, &sigma;<sub>2</sub> = ?</span>
+                Note: The high-pass image can be negative, so it is shown shifted by 0.5 so that zero is
+                mid-gray.
+            </p>
+            <p class="group-label">Cutoff Frequency Choice</p>
+            <p class="sigmas">
+                &sigma;<sub>1</sub> = 2 &ndash; high-pass Stitch image<br>
+                &sigma;<sub>2</sub> = 6 &ndash; low-pass Toothless image
+            </p>
+            <p>
+                I chose a relatively small &sigma;<sub>1</sub> because I wanted to keep only Stitch&rsquo;s fine
+                lines, and I chose &sigma;<sub>2</sub> to put a stronger blur on Toothless, so I can focus on
+                Stitch up close. I tuned the sigmas based on my results and not on Nutmeg and Derek, which is
+                why I use different sigmas for them.
             </p>
             <p class="group-label">Final Hybrid</p>
             <div class="figures">
@@ -425,7 +596,13 @@
             </div>
 
             <h3>Derek + Nutmeg</h3>
-            <p>Up close you see Nutmeg; from far away you see Derek.</p>
+            <p class="sigmas">
+                &sigma;<sub>1</sub> = 10 &ndash; high-pass Nutmeg image<br>
+                &sigma;<sub>2</sub> = 15 &ndash; low-pass Derek image
+            </p>
+            <p>
+                You should be able to see Nutmeg up close and see Derek far away.
+            </p>
             <div class="figures cols-4">
                 <figure>
                     <img src="./cs180_proj2_hybrid_starter_code/DerekPicture.jpg" alt="Derek, the low-frequency input">
@@ -436,17 +613,23 @@
                     <figcaption>Nutmeg (High Frequencies)</figcaption>
                 </figure>
                 <figure>
-                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_hybrid.jpg" alt="Hybrid of Derek and Nutmeg in color">
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_derek_hybrid.jpg" alt="Hybrid of Derek and Nutmeg in color">
                     <figcaption>Hybrid (Color)</figcaption>
                 </figure>
                 <figure>
-                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_hybrid_gray.jpg" alt="Hybrid of Derek and Nutmeg in grayscale">
+                    <img src="./cs180_proj2_hybrid_starter_code/output_pictures/cat_derek_hybrid_gray.jpg" alt="Hybrid of Derek and Nutmeg in grayscale">
                     <figcaption>Hybrid (Grayscale)</figcaption>
                 </figure>
             </div>
 
             <h3>Soup + Empty Plate</h3>
-            <p>Up close you see a bowl of soup; from far away you see an empty plate.</p>
+            <p class="sigmas">
+                &sigma;<sub>1</sub> = 2 &ndash; high-pass bowl of soup image (that I made :P)<br>
+                &sigma;<sub>2</sub> = 6 &ndash; low-pass empty plate image
+            </p>
+            <p>
+                You should be able to see soup up close and see an empty plate far away.
+            </p>
             <div class="figures cols-4">
                 <figure>
                     <img src="./cs180_proj2_hybrid_starter_code/empty.jpg" alt="An empty paper plate, the low-frequency input">
@@ -471,13 +654,12 @@
             <p class="part-label">Part 2.3</p>
             <h2>Gaussian and Laplacian Stacks</h2>
             <p>
-                A Gaussian stack repeatedly blurs the image without downsampling, so every level
-                stays the same size. Each level blurs the previous one with
-                <span class="nowrap">&sigma; = 2 &middot; 2<sup><i>i</i> &minus; 1</sup></span>.
-                The Laplacian stack takes the difference between neighboring Gaussian levels, so
-                each Laplacian level holds one band of frequencies, and its last level is the
-                blurriest Gaussian level. Adding up every Laplacian level gives back the original
-                image.
+                A Gaussian stack repeatedly blurs the image without downsampling, so every level stays the same
+                size. Each level blurs the previous one with
+                <span class="nowrap">&sigma; = 2 &middot; 2<sup><i>i</i> &minus; 1</sup></span>. The Laplacian
+                stack takes the difference between neighboring Gaussian levels, so each Laplacian level holds one
+                band of frequencies, and its last level is the blurriest Gaussian level. Adding up every
+                Laplacian level gives back the first image in the Gaussian stack.
             </p>
             <div class="eq-block" data-label="Laplacian Stack">
                 <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
@@ -485,9 +667,9 @@
                 </math>
             </div>
             <p>
-                Below are 5-level stacks for the apple and the orange. In each, the top row is the
-                Gaussian stack and the bottom row is the Laplacian stack, with the Laplacian levels
-                normalized for display.
+                Below are the 5-level stacks for both the &lsquo;apple&rsquo; and &lsquo;orange&rsquo; that will
+                later become the oraple (WOAH). In each, the top row is the Gaussian stack and the bottom row is
+                the Laplacian stack, with the Laplacian levels normalized for display.
             </p>
             <div class="figures wide">
                 <figure>
@@ -499,17 +681,31 @@
                     <figcaption>Orange</figcaption>
                 </figure>
             </div>
+
+            <h3>Recreating Figure 3.42</h3>
+            <p>
+                Applying the stacks to the oraple (created in the next section) with the vertical mask recreates
+                Figure 3.42. It shows the masked Laplacian levels of the apple, the orange, and the blend at
+                levels 0, 2, and 4, with each column&rsquo;s levels summed in the last row. This figure uses the
+                7-level stacks from Part 2.4, and the Laplacian levels are normalized for display.
+            </p>
+            <div class="figures single tall">
+                <figure>
+                    <img src="./output_pictures/oraple_laplacian.png" alt="Grid of masked Laplacian levels 0, 2, and 4 for the apple, the orange, and the oraple, with a final row of each summed">
+                    <figcaption>Masked Laplacian Levels of the Oraple</figcaption>
+                </figure>
+            </div>
         </section>
 
         <section class="part">
             <p class="part-label">Part 2.4</p>
             <h2>Multiresolution Blending (a.k.a. the oraple!)</h2>
             <p>
-                To blend two images, I build a Laplacian stack for each image and a Gaussian stack
-                for the mask. At each level, the mask&rsquo;s Gaussian level weights the two
-                Laplacian levels, and summing the blended levels gives the final image. Because the
-                mask is blurred more at coarser levels, low frequencies blend over a wide
-                transition while fine details switch over sharply, which hides the seam.
+                How do we create the oraple?!?!?! To blend two images, you can build a Laplacian stack for each
+                image and a Gaussian stack for the mask. At each level, the mask&rsquo;s Gaussian level weights
+                the two Laplacian levels, and summing the blended levels gives the final image. Since the mask is
+                blurred more at coarser levels, low frequencies blend over a wide transition while fine details
+                switch over sharply, which hides the seam.
             </p>
             <div class="eq-block" data-label="Multiresolution Blending">
                 <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
@@ -533,7 +729,7 @@
                     <figcaption>Oraple</figcaption>
                 </figure>
             </div>
-            <p class="group-label">Night + Ocean &middot; Horizontal Mask</p>
+            <p class="group-label">Starry Ocean &middot; Horizontal Mask</p>
             <div class="figures cols-3">
                 <figure>
                     <img src="./pictures/night.jpeg" alt="A starry night sky">
@@ -545,10 +741,10 @@
                 </figure>
                 <figure>
                     <img src="./output_pictures/night_ocean.jpg" alt="The night sky blended above the glowing ocean">
-                    <figcaption>Night Ocean</figcaption>
+                    <figcaption>Starry Ocean</figcaption>
                 </figure>
             </div>
-            <p class="group-label">Blue Shell + Water &middot; Irregular Mask</p>
+            <p class="group-label">Water Bucket Challenge &middot; Irregular Mask</p>
             <div class="figures cols-4">
                 <figure>
                     <img src="./pictures/blue_shell.jpeg" alt="A person reacting in a store with a blue shell overhead">
@@ -564,22 +760,33 @@
                 </figure>
                 <figure>
                     <img src="./output_pictures/cold_water.jpg" alt="The person blended under the bucket of pouring water">
-                    <figcaption>Cold Water</figcaption>
+                    <figcaption>Water Bucket Challenge</figcaption>
                 </figure>
             </div>
 
-            <h3>Process: Blue Shell + Water</h3>
+            <h3>Process: Water Bucket Challenge</h3>
             <p>
-                For my favorite result, here is the Laplacian stack of each masked input and of the
-                blend. I used a 7-level stack and a mask of the person that is first blurred with
-                <span class="nowrap">&sigma; = 1</span>.
+                For my favorite result, here is the Laplacian stack of each masked input and of the blend at levels 0, 2, and 4, with the
+                sum of all levels in the last row. I used a 7-level stack and a mask of the person that is first
+                blurred with <span class="nowrap">&sigma; = 1</span>. COLD! SHOCKED! BRRRR!
             </p>
-            <div class="figures wide">
+            <div class="figures single tall">
                 <figure>
-                    <div class="slot" style="aspect-ratio: 5 / 3">Image to be added</div>
+                    <img src="./output_pictures/cold_water_laplacian.png" alt="Grid of masked Laplacian levels 0, 2, and 4 for the blue shell image, the water image, and their blend, with a final row of each summed">
                     <figcaption>Masked Laplacian Stacks and Their Sums</figcaption>
                 </figure>
             </div>
+        </section>
+
+
+        <section class="part">
+            <h2>Takeaway</h2>
+            <p>
+                The most important thing that I learned doing this project was the idea of viewing
+                images as frequencies. An image is a combination of low and high frequencies, and
+                using filters we can break them apart. I feel this will be really helpful and useful
+                to know for the upcoming ML sections.
+            </p>
         </section>
 
     </div>
