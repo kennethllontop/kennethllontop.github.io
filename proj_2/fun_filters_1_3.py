@@ -43,5 +43,28 @@ magnitude = np.sqrt((result_diff_x)**2 + (result_diff_y)**2)
 mag_img = magnitude / magnitude.max() * 255 # Rescaling
 cv2.imwrite('output_pictures/magnitude_cameraman_blurry.png', mag_img.astype(np.uint8))
 
+# Binary
 edges_mask = magnitude > 65
 cv2.imwrite('output_pictures/magnitude_cameraman_binary_blurry.png', edges_mask.astype(np.uint8) * 255)
+
+# DoG Filter
+dog_x = convolve2d(kernel_2d, diff_x, mode='full')
+dog_y = convolve2d(kernel_2d, diff_y, mode='full')
+
+#Applying DoG Filter
+result_dog_x = convolve2d(img, diff_x, mode='same')
+result_dog_y = convolve2d(img, diff_y, mode='same')
+
+
+cv2.imwrite('output_pictures/dog_x_cameraman.png', result_dog_x.astype(np.uint8))
+cv2.imwrite('output_pictures/dog_y_cameraman.png', result_dog_y.astype(np.uint8))
+
+# Calculating the magnitude
+magnitude_dog = np.sqrt((result_dog_x)**2 + (result_dog_y)**2)
+mag_img_dog = magnitude_dog / magnitude_dog.max() * 255 # Rescaling
+cv2.imwrite('output_pictures/magnitude_cameraman_dog.png', mag_img_dog.astype(np.uint8))
+
+# Binary
+edges_mask_dog = magnitude_dog > 65
+cv2.imwrite('output_pictures/magnitude_cameraman_binary_dog.png', edges_mask_dog.astype(np.uint8) * 255)
+

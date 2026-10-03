@@ -31,11 +31,11 @@ def gaussian_stack(im, sig):
     
 s = 2
 levels = 7
-# pictures = ['apple', 'orange']
+pictures = ['apple', 'orange']
 
 # pictures = ['night', 'ocean']
 
-pictures = ['blue_shell', 'water']
+# pictures = ['blue_shell', 'water']
 g_stack = []
 l_stack = []
 for pic in pictures:
@@ -74,15 +74,16 @@ height, width = g_stack[0][0].shape[:2]
 mask = np.zeros((height, width, 3))
 
 # Vertical Mask
-# mask[:, :width // 2] = 1.0
+mask[:, :width // 2] = 1.0
 
 # Horizontal Mask
 # mask[:height // 2, :] = 1.0
 
-# Human mask
-mask = skio.imread('./pictures/person_mask.png') / 255.0
-mask = np.dstack([mask, mask, mask])
+# # Human mask
+# mask = skio.imread('./pictures/person_mask.png') / 255.0
+# mask = np.dstack([mask, mask, mask])
 
+# Mask code
 mask = gaussian_stack(mask, 1)
 mask_stack_images = [mask]
 
@@ -103,4 +104,46 @@ for i in range(0, levels):
     layer_collections.append(layer)
 
 result = np.clip(sum(layer_collections), 0, 1)
-skio.imsave('output_pictures/cold_water.jpg', (result * 255).astype(np.uint8))
+skio.imsave('output_pictures/oraple.jpg', (result * 255).astype(np.uint8))
+
+
+# Creating the figure
+def normalize(img):
+    return (img - img.min()) / (img.max() - img.min())
+
+# Masking the laplacian levels of each image
+masked_A = []
+masked_B = []
+for i in range(0, levels):
+    masked_A.append(mask_stack_images[i] * LA[i])
+    masked_B.append((1 - mask_stack_images[i]) * LB[i])
+
+# Levels i want to show
+show_levels = [0, 2, 4]
+
+fig, axes = plt.subplots(len(show_levels) + 1, 3, figsize=(9, 3 * (len(show_levels) + 1)))
+for row in range(0, len(show_levels)):
+    i = show_levels[row]
+    # Laplacian levels have negative values so I need to normalize them to see them
+    axes[row, 0].imshow(normalize(masked_A[i]))
+    axes[row, 1].imshow(normalize(masked_B[i]))
+    axes[row, 2].imshow(normalize(layer_collections[i]))
+    axes[row, 0].set_title(f'{pictures[0]} Level {i}')
+    axes[row, 1].set_title(f'{pictures[1]} Level {i}')
+    axes[row, 2].set_title(f'Blended Level {i}')
+
+# Last row is every level added together
+axes[-1, 0].imshow(np.clip(sum(masked_A), 0, 1))
+axes[-1, 1].imshow(np.clip(sum(masked_B), 0, 1))
+axes[-1, 2].imshow(np.clip(sum(layer_collections), 0, 1))
+axes[-1, 0].set_title(f'{pictures[0]} All Levels')
+axes[-1, 1].set_title(f'{pictures[1]} All Levels')
+axes[-1, 2].set_title('Blended All Levels')
+
+for row in range(0, len(show_levels) + 1):
+    for col in range(0, 3):
+        axes[row, col].axis('off')
+
+plt.tight_layout()
+plt.savefig('output_pictures/oraple_laplacian.png', dpi=150)
+plt.close()

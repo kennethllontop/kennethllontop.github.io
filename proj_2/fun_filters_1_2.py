@@ -30,5 +30,5 @@ magnitude = np.sqrt((result_diff_x)**2 + (result_diff_y)**2)
 mag_img = magnitude / magnitude.max() * 255 # Rescaling
 cv2.imwrite('output_pictures/magnitude_cameraman.png', mag_img.astype(np.uint8))
 
-edges_mask = magnitude > 65
+edges_mask = magnitude > 65 # With this value I was able to get rid of most of the noise that concentrated at the bottom of the picture while still keeping the true edges/lines of the cameraman and their camera.
 cv2.imwrite('output_pictures/magnitude_cameraman_binary.png', edges_mask.astype(np.uint8) * 255)
