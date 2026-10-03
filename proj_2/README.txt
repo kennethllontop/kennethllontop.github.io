@@ -4,7 +4,7 @@ Kenneth Llontop
 
 HOW TO RUN
 
-Run everything from the proj_2 folder:
+Run everything from this folder, the one with main.py in it:
 
     python main.py
 
@@ -43,20 +43,22 @@ fun_filters_2_4.py   Part 2.4  Multiresolution blending and the masked Laplacian
 
 INPUTS AND OUTPUTS
 
-Input pictures are in proj_2/pictures and in proj_2/cs180_proj2_hybrid_starter_code.
+Input pictures are in pictures and in cs180_proj2_hybrid_starter_code.
 
-Results are saved to proj_2/output_pictures, proj_2/output_pictures/fig_2_1 and
-proj_2/cs180_proj2_hybrid_starter_code/output_pictures. main.py makes these folders if they
-are missing.
+Results are saved to output_pictures, output_pictures/fig_2_1 and
+cs180_proj2_hybrid_starter_code/output_pictures. main.py makes these folders if they are
+missing.
 
 
 THINGS TO KNOW WHILE IT RUNS
 
-- Part 2.2 asks you to click alignment points for each of the 3 hybrids. For the Toothless and Stitch results
-  I clicked on the white part of Stitches eyes and the I clicked Toothless eyes. However for Toothless Left eye
-  click horizontally to left most spot and the right eye click on North East part of the eye. Soup and Empty
-  I just clicked on the North and South edges of the plate. For Derek and Nutmeg I clicked in the middle of their
-  pupils. 
+- Part 2.2 asks you to click 2 alignment points on each image for each of the 3 hybrids.
+  The first window shows the high frequency image and the second shows the low frequency
+  image. For Toothless and Stitch, I clicked on the white part of Stitch's eyes and then on
+  Toothless's eyes. For Toothless's left eye, click the leftmost spot of the eye, and for the
+  right eye, click the north east part of the eye. For the soup and the empty plate, I
+  clicked the north and south edges of the plate. For Derek and Nutmeg, I clicked in the
+  middle of their pupils.
 - The hybrid code shows its results with plt.show(). Close each window to continue.
 - Part 1.1 prints "All tests passed" after comparing my convolutions with
   scipy.signal.convolve2d.

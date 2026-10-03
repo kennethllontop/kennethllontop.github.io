@@ -2,7 +2,7 @@ import os
 import sys
 import runpy
 
-# Run from the proj_2 folder
+# Run from the code folder
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # cv2.imwrite does not make folders
