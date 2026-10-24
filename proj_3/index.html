@@ -81,8 +81,7 @@
             <h2>Constructing Noisy Training Inputs</h2>
             <p>
                 For Sections 1.1&ndash;1.5 I used my own photo of a waterfall in Yosemite. I sampled one
-                noise tensor and reused it at <i>t</i> = 0.25, 0.50, and 0.75. This is more than adding
-                noise: the image is also scaled down by <i>t</i>, so the original fades out as the noise
+                noise tensor and reused it at <i>t</i> = 0.25, 0.50, and 0.75. This is more than adding noise, since the image is also scaled down by <i>t</i>, so the original fades out as the noise
                 takes over. 
             </p>
 
@@ -228,8 +227,7 @@
             <h2>Visualizing Velocity</h2>
             <p>
                 Here I look at what the model actually adds in Section 1.3. Because I know the clean image,
-                I also know the exact update it should add: (1 &minus; <i>t</i>)<i>v</i><sub>gt</sub> =
-                <i>x</i><sub>1</sub> &minus; <i>x</i><sub><i>t</i></sub>. The predicted and ground-truth
+                I also know the exact update it should add, which is (1 &minus; <i>t</i>)<i>v</i><sub>gt</sub> = <i>x</i><sub>1</sub> &minus; <i>x</i><sub><i>t</i></sub>. The predicted and ground-truth
                 updates share one symmetric color scale with zero at middle gray. The error map is the
                 per-pixel RMS difference across RGB, drawn with the same linear scale from 0 to 0.25 at
                 every time.
@@ -277,9 +275,7 @@
             <p>
                 The velocity changes along the path, so I take small steps instead of one big jump. Starting
                 from the <i>t</i> = 0.50 input with <i>h</i> = 0.02, that is 25 updates. The function
-                shortens the final step so it ends exactly at <i>t</i> = 1. I tested it on a constant
-                velocity field first: 50 steps from 0, 25 steps from 0.5, and a shortened last step
-                starting from 0.93.
+                shortens the final step so it ends exactly at <i>t</i> = 1. I tested it on a constant velocity field first, checking 50 steps from 0, 25 steps from 0.5, and a shortened last step starting from 0.93.
             </p>
 
             <div class="eq-block" data-label="Euler Update">
@@ -354,8 +350,7 @@
                 </div>
             </div>
             <p>
-                The Euler result clearly looks best: the rock faces, the trees, and the water have real
-                texture again. Its mean squared error is slightly higher than one-step denoising, though.
+                The Euler result clearly looks best, since the rock faces, the trees, and the water have real texture again. Its mean squared error is slightly higher than one-step denoising, though.
                 MSE rewards the blurry average, and Euler sampling commits to specific, plausible details
                 that don&rsquo;t match the original pixel for pixel. The noisy input simply doesn&rsquo;t
                 contain the exact original texture.
@@ -401,8 +396,7 @@
             <p class="part-label">Part A &middot; 2.1</p>
             <h2>Classifier-Free Guidance</h2>
             <p>
-                To improve image quality and prompt alignment, I evaluate the model twice per step: once
-                with the prompt and once with an empty prompt. Then I push the prediction further in the
+                To improve image quality and prompt alignment, I evaluate the model twice per step, once with the prompt and once with an empty prompt. Then I push the prediction further in the
                 direction the prompt adds. With <i>w</i> = 0 this is ordinary conditional sampling, which I
                 checked with an assert.
             </p>
@@ -437,8 +431,7 @@
             </div>
             <p>
                 With the same five starting noises, every CFG sample is a sharp, well-lit, coherent photo,
-                with no garbled text or cropped heads. The cost is diversity: all five are front-facing
-                headshots of a dark-haired man against a plain background. Guidance pulls every seed toward
+                with no garbled text or cropped heads. The cost is diversity, because all five are front-facing headshots of a dark-haired man against a plain background. Guidance pulls every seed toward
                 the model&rsquo;s strongest idea of &ldquo;a high quality photo.&rdquo;
             </p>
         </section>
@@ -611,8 +604,7 @@
                 </figure>
             </div>
             <p>
-                The white background survives every edit, so the model produces product-style photos of
-                white objects: a mirror, a shirt, a sweater. At 0.14 the sweater and sneakers are arranged
+                The white background survives every edit, so the model produces product-style photos of white objects like a mirror, a shirt, and a sweater. At 0.14 the sweater and sneakers are arranged
                 almost like a sitting figure. My favorite is 0.25, where Toothless has a crown.
             </p>
 
@@ -652,8 +644,7 @@
                 </figure>
             </div>
             <p>
-                At 0.14 the vases and the bottle become three people sitting on a couch. At 0.25 the
-                drawing becomes what I hoped for: the same still life, now as real white ceramics.
+                At 0.14 the vases and the bottle become three people sitting on a couch. At 0.25 the drawing becomes what I hoped for, the same still life now as real white ceramics.
             </p>
 
             <p class="group-label">Hand-Drawn &middot; Charcoal Still Life</p>
@@ -945,9 +936,8 @@
             <p class="part-label">Part B</p>
             <h2>Flow Matching from Scratch</h2>
             <p>
-                In Part B, I build and train my own UNet on MNIST: first as a one-step denoiser, then as a
-                flow matching model conditioned on time, and finally on time and digit class. All models
-                were trained on an A100 in Colab with seed 180. MNIST pixels are in [0, 1].
+                In Part B, I build and train my own UNet on MNIST, first as a one-step denoiser, then as a
+                flow matching model conditioned on time, and finally on time and digit class.
             </p>
         </section>
 
@@ -957,8 +947,7 @@
             <p>
                 The UNet downsamples a 28&times;28 digit twice to 7&times;7, flattens it to a 1&times;1
                 bottleneck, and then upsamples back. Skip connections concatenate the encoder features with
-                the decoder features at each resolution. Each simple op is a convolution followed by
-                BatchNorm and GELU: Conv is 3&times;3 with stride 1, DownConv is
+                the decoder features at each resolution. Each simple op is a convolution followed by BatchNorm and GELU. Conv is 3&times;3 with stride 1, DownConv is
                 3&times;3 with stride 2, and UpConv is a 4&times;4 transposed convolution with
                 stride 2. Flatten is a 7&times;7 average pool, and Unflatten is a
                 7&times;7 transposed convolution. The composed blocks add a ConvBlock (two
@@ -1040,7 +1029,7 @@
             <div class="figures single">
                 <figure>
                     <img src="./images/part_b/loss_denoiser.png" alt="Training loss curve: drops from about 0.19 to under 0.02 in the first 100 steps, then slowly to about 0.008" loading="lazy">
-                    <figcaption>Training loss (light: per step, dark: 100-step average)</figcaption>
+                    <figcaption>Training loss (light line per step, dark line 100-step average)</figcaption>
                 </figure>
             </div>
 
@@ -1090,8 +1079,7 @@
             </div>
             <p>
                 Up to &sigma; = 0.6 the denoiser works almost perfectly, and at &sigma; = 0 it simply passes
-                the digit through. Above the training level it breaks down: at 0.8 and 1.0 it leaves noise
-                behind and starts inventing strokes. The 7 picks up extra marks, and the 1 turns into a
+                the digit through. Above the training level it breaks down, and at 0.8 and 1.0 it leaves noise behind and starts inventing strokes. The 7 picks up extra marks, and the 1 turns into a
                 looped scribble. It learned to remove noise of one specific strength, so stronger noise gets
                 read as part of the digit.
             </p>
@@ -1134,8 +1122,7 @@
             </div>
             <p>
                 Every output is the same blurry blob, no matter which noise goes in, and epochs 1 and 5 look
-                the same. The blob is almost identical to the pixel-wise mean of all 60,000 training digits:
-                a soft oval that looks like a faint 0 and 8 laid on top of each other. The input noise is independent of the
+                the same. The blob is almost identical to the pixel-wise mean of all 60,000 training digits, a soft oval that looks like a faint 0 and 8 laid on top of each other. The input noise is independent of the
                 target digit, so it carries no information about which digit to produce. Under an MSE loss,
                 the best single answer is then the point closest to all training images on average, their
                 centroid, which is the mean image. The loss plateaus around 0.067 because that is the
@@ -1232,8 +1219,7 @@
                 After one epoch the samples are blobby, broken strokes. By epoch 5 most of them are
                 connected, digit-like shapes, and many are readable 0s, 1s, 4s, and 9s. By epoch 10 the
                 strokes are smooth and most samples are legible, though a few are still ambiguous shapes
-                somewhere between two digits. Because the noise is fixed, you can watch the same sample improve: the
-                1 in the second column and the 0 in the second row stay put and get cleaner.
+                somewhere between two digits. Because the noise is fixed, you can watch the same sample improve. The 1 in the second column and the 0 in the second row stay put and get cleaner.
             </p>
         </section>
 
@@ -1357,8 +1343,7 @@
             </div>
             <p>
                 Without the scheduler the model is just as good. The final loss is even slightly lower
-                (0.0838 vs. 0.0854), and the epoch 10 samples are just as clean. The constant-rate model is
-                actually better early on: its epoch 1 samples are already mostly clean, while the scheduled
+                (0.0838 vs. 0.0854), and the epoch 10 samples are just as clean. The constant-rate model is actually better early on, since its epoch 1 samples are already mostly clean, while the scheduled
                 model&rsquo;s epoch 1 samples are still rough from the unstable start at 1e-2. One small
                 difference is that the 5 in the third row stays a little broken in the constant-rate model.
             </p>
