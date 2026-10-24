@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project 3: Flow Matching</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Forum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <h1 class="project-title">Project 3: Flow Matching</h1>
+
+    <img class="crest small" src="../assets/bridge-palms.svg"
+         alt="Vincent Thomas Bridge framed by palm trees" width="496" height="190">
+
+    <nav>
+        <a class="pill" href="#part-a">Part A</a>
+        <a class="pill" href="#part-b">Part B</a>
+    </nav>
+
+    <div class="parts">
+
+        <!-- ================================================================== -->
+        <!-- PART A                                                             -->
+        <!-- ================================================================== -->
+
+        <section class="part chapter" id="part-a">
+            <p class="part-label">Part A</p>
+            <h2>Exploring the Power of Flow Models</h2>
+            <p>
+                In Part A, I use a pretrained text-to-image flow model to denoise images, generate new
+                ones from pure noise, and then make edits/optical illusions. The model is <a href="https://huggingface.co/MCG-NJU/PixNerd-XXL-P16-T2I">PixNerd-XXL</a>, which works on 512&times;512 pixels. Text prompts are turned into embeddings with Qwen3
+                before they are passed to the model. 
+            </p>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Model</p>
+                    <h4>PixNerd-XXL</h4>
+                    <p>A pretrained text-to-image flow model that makes 512&times;512 images.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Sampler</p>
+                    <h4>Euler, h = 0.02</h4>
+                    <p>50 steps when starting from pure noise, and fewer when starting from a noisy image.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Guidance</p>
+                    <h4>CFG, w = 7</h4>
+                    <p>Classifier-free guidance, with an empty prompt as the unconditional input.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1</p>
+            <h2>Training and Sampling in Flow Matching</h2>
+            <p>
+                Flow matching connects Gaussian noise &epsilon; at <i>t</i> = 0 to a clean image
+                <i>x</i><sub>1</sub> at <i>t</i> = 1 with a straight line. During training, the model sees a
+                point on that line and learns to predict the line&rsquo;s velocity,
+                <i>x</i><sub>1</sub> &minus; &epsilon;. To sample, I start from noise and follow the
+                predicted velocity until <i>t</i> = 1. Each training path is straight, but the learned
+                sampling path curves, so I take many small Euler steps and predict a new velocity after
+                each one.
+            </p>
+
+            <div class="eq-block" data-label="Interpolation, Training Target, and Sampling">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>x</mi><mi>t</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>t</mi><mo stretchy="false">)</mo><mi>&#x03B5;</mi><mo>+</mo><mi>t</mi><msub><mi>x</mi><mn>1</mn></msub></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi mathvariant="script">L</mi><mo>=</mo><mi>&#x1D53C;</mi><msup><mrow><mo>&#x2016;</mo><msub><mi>v</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mi>c</mi><mo stretchy="false">)</mo><mo>&#x2212;</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>&#x2212;</mo><mi>&#x03B5;</mi><mo stretchy="false">)</mo><mo>&#x2016;</mo></mrow><mn>2</mn></msup></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mfrac><mrow><mi>d</mi><msub><mi>x</mi><mi>t</mi></msub></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><msub><mi>v</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.1</p>
+            <h2>Constructing Noisy Training Inputs</h2>
+            <p>
+                For Sections 1.1&ndash;1.5 I used my own photo of a waterfall in Yosemite. I sampled one
+                noise tensor and reused it at <i>t</i> = 0.25, 0.50, and 0.75. This is more than adding
+                noise: the image is also scaled down by <i>t</i>, so the original fades out as the noise
+                takes over. 
+            </p>
+
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original photo of a waterfall pouring down a granite cliff with pine trees">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t025.jpg" alt="The waterfall at t = 0.25, almost entirely covered in colored noise">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t050.jpg" alt="The waterfall at t = 0.50, outline visible through heavy noise">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t075.jpg" alt="The waterfall at t = 0.75, mostly clear with light noise">
+                    <figcaption>t = 0.75</figcaption>
+                </figure>
+            </div>
+            <p>
+                At <i>t</i> = 0.25 only a faint outline of the waterfall shows through. By
+                <i>t</i> = 0.75 the trees and rocks are clear again under a subtle grain.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.2</p>
+            <h2>Classical Denoising</h2>
+            <p>
+                As a baseline without a learned model, I divide the noisy image by <i>t</i> to restore the
+                image&rsquo;s brightness and then apply a Gaussian blur. For each noise level I tried
+                &sigma; = 1, 2, 4, 8, 16 and kept the one with the lowest mean squared error against the
+                clean photo.
+            </p>
+
+            <div class="eq-block" data-label="Gaussian Blur Baseline">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mover accent="true"><mi>x</mi><mo>&#x005E;</mo></mover><mn>1</mn></msub><mo>=</mo><msub><mi>G</mi><mi>&#x03C3;</mi></msub><mo>&#x2217;</mo><mfrac><msub><mi>x</mi><mi>t</mi></msub><mi>t</mi></mfrac></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_a/forward_t025.jpg" alt="Noisy waterfall at t = 0.25">
+                    <figcaption>Noisy input &middot; t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/blur_t025.jpg" alt="Gaussian blur at sigma 16, only soft blobs of color remain">
+                    <figcaption>Gaussian blur &middot; &sigma; = 16</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t050.jpg" alt="Noisy waterfall at t = 0.50">
+                    <figcaption>Noisy input &middot; t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/blur_t050.jpg" alt="Gaussian blur at sigma 4, the waterfall shape is visible but grainy and soft">
+                    <figcaption>Gaussian blur &middot; &sigma; = 4</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t075.jpg" alt="Noisy waterfall at t = 0.75">
+                    <figcaption>Noisy input &middot; t = 0.75</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/blur_t075.jpg" alt="Gaussian blur at sigma 2, a soft but recognizable waterfall">
+                    <figcaption>Gaussian blur &middot; &sigma; = 2</figcaption>
+                </figure>
+            </div>
+            <p>
+                The noisier the input, the stronger the blur has to be, and the more detail it destroys. At
+                <i>t</i> = 0.25 the best blur (&sigma; = 16) leaves only colored blobs. At
+                <i>t</i> = 0.75 a light blur works, but the result is soft and the trees lose their
+                texture.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.3</p>
+            <h2>One-Step Denoising</h2>
+            <p>
+                Next I use the pretrained flow model with the prompt &ldquo;a high quality photo&rdquo;. One
+                velocity prediction lets me jump straight from <i>x</i><sub><i>t</i></sub> to an estimate
+                of the clean image.
+            </p>
+
+            <div class="eq-block" data-label="One-Step Estimate">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mover accent="true"><mi>x</mi><mo>&#x005E;</mo></mover><mn>1</mn></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>t</mi><mo stretchy="false">)</mo><mspace width="0.15em"/><msub><mi>v</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t025.jpg" alt="Noisy waterfall at t = 0.25" loading="lazy">
+                    <figcaption>Noisy &middot; t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/one_step_t025.jpg" alt="One-step estimate from t = 0.25, a smooth, blurry waterfall with the right layout" loading="lazy">
+                    <figcaption>One-step &middot; t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t050.jpg" alt="Noisy waterfall at t = 0.50" loading="lazy">
+                    <figcaption>Noisy &middot; t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/one_step_t050.jpg" alt="One-step estimate from t = 0.50, sharper with trees and rocks visible" loading="lazy">
+                    <figcaption>One-step &middot; t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/forward_t075.jpg" alt="Noisy waterfall at t = 0.75" loading="lazy">
+                    <figcaption>Noisy &middot; t = 0.75</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/one_step_t075.jpg" alt="One-step estimate from t = 0.75, close to the original, including a faint rainbow" loading="lazy">
+                    <figcaption>One-step &middot; t = 0.75</figcaption>
+                </figure>
+            </div>
+            <p>
+                This is much better than the blur. Even from <i>t</i> = 0.25 the model recovers the cliff,
+                the waterfall, and the mist in the right places, but the result looks smooth and painted.
+                One prediction gives roughly the average of all the clean images that could have produced
+                this noisy input, so fine detail like the pine needles gets averaged away. From
+                <i>t</i> = 0.75 the estimate is close to the original, and even the faint rainbow at the
+                bottom left survives.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.4</p>
+            <h2>Visualizing Velocity</h2>
+            <p>
+                Here I look at what the model actually adds in Section 1.3. Because I know the clean image,
+                I also know the exact update it should add: (1 &minus; <i>t</i>)<i>v</i><sub>gt</sub> =
+                <i>x</i><sub>1</sub> &minus; <i>x</i><sub><i>t</i></sub>. The predicted and ground-truth
+                updates share one symmetric color scale with zero at middle gray. The error map is the
+                per-pixel RMS difference across RGB, drawn with the same linear scale from 0 to 0.25 at
+                every time.
+            </p>
+
+            <div class="eq-block" data-label="Per-Pixel Error">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>E</mi><mi>t</mi></msub><mo>=</mo><msqrt><mrow><msub><mtext>mean</mtext><mtext>RGB</mtext></msub><mspace width="0.2em"/><msup><mrow><mo>[</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>t</mi><mo stretchy="false">)</mo><mo stretchy="false">(</mo><msub><mover accent="true"><mi>v</mi><mo>&#x005E;</mo></mover><mi>t</mi></msub><mo>&#x2212;</mo><msub><mi>v</mi><mtext>gt</mtext></msub><mo stretchy="false">)</mo><mo>]</mo></mrow><mn>2</mn></msup></mrow></msqrt></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+            </div>
+            <div class="figures wide">
+                <figure>
+                    <img src="./images/part_a/velocity_t025.jpg" alt="At t = 0.25: noisy image, predicted update, ground-truth update, and a bright error map over the trees and rocks" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/velocity_t050.jpg" alt="At t = 0.50: noisy image, predicted update, ground-truth update, and a moderate error map" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/velocity_t075.jpg" alt="At t = 0.75: noisy image, predicted update, ground-truth update, and a mostly dark error map" loading="lazy">
+                    <figcaption>t = 0.75</figcaption>
+                </figure>
+            </div>
+            <p>
+                The predicted update has the same overall layout as the ground truth, with the waterfall and
+                the cliff edges in the right places, but it is smoother. The ground truth also contains the
+                exact pixel texture of the rocks and trees, which the model cannot know from a noisy input.
+                That is where the error map lights up. The sky stays dark because it is flat and easy to
+                predict. The error drops a lot from <i>t</i> = 0.25 to 0.75, since there is less left to
+                fix and more of the image to go on.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.5</p>
+            <h2>Iterative Denoising with Euler Sampling</h2>
+            <p>
+                The velocity changes along the path, so I take small steps instead of one big jump. Starting
+                from the <i>t</i> = 0.50 input with <i>h</i> = 0.02, that is 25 updates. The function
+                shortens the final step so it ends exactly at <i>t</i> = 1. I tested it on a constant
+                velocity field first: 50 steps from 0, 25 steps from 0.5, and a shortened last step
+                starting from 0.93.
+            </p>
+
+            <div class="eq-block" data-label="Euler Update">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>x</mi><mrow><mi>t</mi><mo>+</mo><mi>h</mi></mrow></msub><mo>=</mo><msub><mi>x</mi><mi>t</mi></msub><mo>+</mo><mi>h</mi><mspace width="0.15em"/><msub><mi>v</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+
+            <p class="group-label">Denoising Trajectory</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./images/part_a/euler_t050.jpg" alt="Euler state at t = 0.50, the noisy starting image" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/euler_t060.jpg" alt="Euler state at t = 0.60" loading="lazy">
+                    <figcaption>t = 0.60</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/euler_t070.jpg" alt="Euler state at t = 0.70" loading="lazy">
+                    <figcaption>t = 0.70</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/euler_t080.jpg" alt="Euler state at t = 0.80" loading="lazy">
+                    <figcaption>t = 0.80</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/euler_t090.jpg" alt="Euler state at t = 0.90, nearly clean" loading="lazy">
+                    <figcaption>t = 0.90</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/euler_t100.jpg" alt="Final Euler result at t = 1.00, a sharp, clean waterfall" loading="lazy">
+                    <figcaption>t = 1.00</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Denoising Methods from t = 0.50</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/forward_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/compare_blur.jpg" alt="Gaussian blur result, grainy and soft" loading="lazy">
+                    <figcaption>Gaussian blur</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/compare_one_step.jpg" alt="One-step estimate, smooth and slightly painted-looking" loading="lazy">
+                    <figcaption>One-step</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/compare_euler.jpg" alt="Euler denoising result, sharp with textured rocks and trees" loading="lazy">
+                    <figcaption>Euler</figcaption>
+                </figure>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Gaussian Blur</p>
+                    <h4>MSE 0.0135</h4>
+                    <p>Removes some noise but leaves a grainy, soft image.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">One-Step</p>
+                    <h4>MSE 0.0084</h4>
+                    <p>Lowest error, but smooth and missing fine texture.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Euler, 25 Steps</p>
+                    <h4>MSE 0.0099</h4>
+                    <p>Looks the most like a real photo, with textured rocks and trees.</p>
+                </div>
+            </div>
+            <p>
+                The Euler result clearly looks best: the rock faces, the trees, and the water have real
+                texture again. Its mean squared error is slightly higher than one-step denoising, though.
+                MSE rewards the blurry average, and Euler sampling commits to specific, plausible details
+                that don&rsquo;t match the original pixel for pixel. The noisy input simply doesn&rsquo;t
+                contain the exact original texture.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1.6</p>
+            <h2>Generating Images from Noise</h2>
+            <p>
+                Starting at <i>t</i> = 0 from pure Gaussian noise, the same Euler sampler generates images
+                from scratch (50 steps). These five samples use the prompt &ldquo;a high quality
+                photo&rdquo; with seeds 195&ndash;199 and no guidance.
+            </p>
+            <div class="figures cols-5">
+                <figure>
+                    <img src="./images/part_a/sample_seed195.jpg" alt="Portrait of a young woman with short brown hair" loading="lazy">
+                    <figcaption>Seed 195</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/sample_seed196.jpg" alt="Portrait of a man with stubble against a dark background" loading="lazy">
+                    <figcaption>Seed 196</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/sample_seed197.jpg" alt="A person in a white hoodie and pants, head cropped out of frame" loading="lazy">
+                    <figcaption>Seed 197</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/sample_seed198.jpg" alt="A garbled painted poster with distorted faces and unreadable text" loading="lazy">
+                    <figcaption>Seed 198</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/sample_seed199.jpg" alt="A woman with long hair partly covering her face, pointing at the camera" loading="lazy">
+                    <figcaption>Seed 199</figcaption>
+                </figure>
+            </div>
+            <p>
+                The generic prompt favors people but the quality has high variance.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 2.1</p>
+            <h2>Classifier-Free Guidance</h2>
+            <p>
+                To improve image quality and prompt alignment, I evaluate the model twice per step: once
+                with the prompt and once with an empty prompt. Then I push the prediction further in the
+                direction the prompt adds. With <i>w</i> = 0 this is ordinary conditional sampling, which I
+                checked with an assert.
+            </p>
+
+            <div class="eq-block" data-label="Classifier-Free Guidance">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>v</mi><mtext>cfg</mtext></msub><mo>=</mo><msub><mi>v</mi><mi>c</mi></msub><mo>+</mo><mi>w</mi><mo stretchy="false">(</mo><msub><mi>v</mi><mi>c</mi></msub><mo>&#x2212;</mo><msub><mi>v</mi><mi>u</mi></msub><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures cols-5">
+                <figure>
+                    <img src="./images/part_a/cfg_seed195.jpg" alt="Clean studio headshot of a young man with dark hair" loading="lazy">
+                    <figcaption>Seed 195 &middot; w = 7</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/cfg_seed196.jpg" alt="Clean headshot of a man with dark hair and stubble" loading="lazy">
+                    <figcaption>Seed 196 &middot; w = 7</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/cfg_seed197.jpg" alt="Clean headshot of a man with dark hair against a light background" loading="lazy">
+                    <figcaption>Seed 197 &middot; w = 7</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/cfg_seed198.jpg" alt="Clean headshot of a man with longer dark hair" loading="lazy">
+                    <figcaption>Seed 198 &middot; w = 7</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/cfg_seed199.jpg" alt="Clean headshot of a young man with short dark hair" loading="lazy">
+                    <figcaption>Seed 199 &middot; w = 7</figcaption>
+                </figure>
+            </div>
+            <p>
+                With the same five starting noises, every CFG sample is a sharp, well-lit, coherent photo,
+                with no garbled text or cropped heads. The cost is diversity: all five are front-facing
+                headshots of a dark-haired man against a plain background. Guidance pulls every seed toward
+                the model&rsquo;s strongest idea of &ldquo;a high quality photo.&rdquo;
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 3.1</p>
+            <h2>Image-to-Image Editing</h2>
+            <p>
+                Adding noise to a real image and denoising it again forces the model to invent the parts the
+                noise destroyed. This is the idea behind SDEdit. I noise the image to a starting time
+                <i>t</i><sub>s</sub> and run guided Euler sampling from there to 1. A small
+                <i>t</i><sub>s</sub> means more noise and a bigger edit. All edits use &ldquo;a high
+                quality photo,&rdquo; <i>w</i> = 7, and the same noise (seed 180).
+            </p>
+
+            <h3>Campanile</h3>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_campanile_original.jpg" alt="Original photo of the Campanile against a blue sky" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t002.jpg" alt="A smooth white rounded column against a blurry blue background" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t004.jpg" alt="A tapered white tower over trees" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t006.jpg" alt="A white tower with a beam sticking out near the top" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t010.jpg" alt="An obelisk-like tower with a single window near the top" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t014.jpg" alt="The same obelisk tower, slightly more detailed" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t025.jpg" alt="A tower with the Campanile's belfry arches" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_campanile_t050.jpg" alt="Nearly identical to the original Campanile, clock face included" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+
+            <h3>Yosemite Waterfall</h3>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t002.jpg" alt="An unrelated portrait of a smiling woman" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t004.jpg" alt="A gray device with a dark frame" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t006.jpg" alt="Three gray ceramic vases on a table" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t010.jpg" alt="A gray cone-shaped vase with two cups" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t014.jpg" alt="A gray strip of fabric draped over a block" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t025.jpg" alt="A painterly waterfall between gray cliffs" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_t050.jpg" alt="Close to the original waterfall photo" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                Below 0.25 the model ignores the scene and keeps only its gray tones, producing a portrait and then indoor objects. The waterfall comes back at 0.25.
+            </p>
+
+            <h3>Beach Sunset</h3>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_original.jpg" alt="Original photo of a beach at sunset with an orange horizon" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t002.jpg" alt="An open book on a desk in front of a blurry window" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t004.jpg" alt="A blue sky over a dark, desk-like surface" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t006.jpg" alt="Sunset sky over a smooth surface like a car dashboard" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t010.jpg" alt="Sunset horizon with smooth bands instead of waves" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t014.jpg" alt="Sunset horizon with smooth bands instead of waves" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t025.jpg" alt="Sunset beach with waves breaking again" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_t050.jpg" alt="Close to the original beach sunset" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                The beach image has very strong horizontal bands, so the model treats it almost like a fence. The beach does appear again in later images.
+            </p>
+
+            <h3>Editing Web and Hand-Drawn Images</h3>
+            <p>
+                The same procedure is fun with non-realistic inputs, because it pulls them onto the
+                manifold of real photos. I used a pencil drawing of Toothless from the web and two of my own
+                still-life drawings.
+            </p>
+
+            <p class="group-label">Web Image &middot; Toothless</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_web_image_original.jpg" alt="Pencil drawing of Toothless the dragon sitting, from the web" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t002.jpg" alt="A printed photo of a man pinned to white paper" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t004.jpg" alt="A round mirror on a white background" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t006.jpg" alt="A white shirt folded over a pillow" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t010.jpg" alt="A white sweater laid on a cushion" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t014.jpg" alt="A white sweater and sneakers arranged like a sitting figure" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t025.jpg" alt="A sketch of a winged creature with a baby-like face and a crown" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_web_image_t050.jpg" alt="Nearly identical to the original Toothless drawing" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                The white background survives every edit, so the model produces product-style photos of
+                white objects: a mirror, a shirt, a sweater. At 0.14 the sweater and sneakers are arranged
+                almost like a sitting figure. My favorite is 0.25, where Toothless has a crown.
+            </p>
+
+            <p class="group-label">Hand-Drawn &middot; Still Life with Vases</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_original.jpg" alt="My pencil still-life drawing of vases, a cone, and a bottle on a table" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t002.jpg" alt="Profile photo of a man with short hair" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t004.jpg" alt="A blank card on a gray surface" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t006.jpg" alt="A man in a T-shirt seen through a rounded frame" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t010.jpg" alt="A man sitting on a gray couch with pillows" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t014.jpg" alt="Three people sitting on a couch where the vases were" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t025.jpg" alt="Photo-like white ceramic vases and bottles in the drawing's layout" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_1_t050.jpg" alt="Close to the original pencil drawing" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                At 0.14 the vases and the bottle become three people sitting on a couch. At 0.25 the
+                drawing becomes what I hoped for: the same still life, now as real white ceramics.
+            </p>
+
+            <p class="group-label">Hand-Drawn &middot; Charcoal Still Life</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_original.jpg" alt="My charcoal still-life drawing of a jar, a ball, a plant, and a box on draped cloth" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t002.jpg" alt="Portrait of a woman with her eyes closed" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t004.jpg" alt="A man leaning on an open notebook at a desk" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t006.jpg" alt="A similar man at a desk, faded toward the drawing's tones" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t010.jpg" alt="A gadget with a cable lying on rumpled white sheets" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t014.jpg" alt="A blurry machine with a keyboard on draped cloth" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t025.jpg" alt="A photo-like camera or coffee machine on draped cloth, in the drawing's layout" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/edit_drawing_2_t050.jpg" alt="Close to the original charcoal drawing" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                The draped cloth is the first part of my drawing the model keeps (0.10), and it turns into
+                rumpled sheets. The jar and the ball become some sort of tech at 0.25. Four of the six
+                inputs in this section turned into a person at <i>t</i><sub>s</sub> = 0.02, which matches the
+                bias toward portraits I saw in Section 1.6.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 3.2</p>
+            <h2>Text-Guided Image Editing</h2>
+            <p>
+                This is the same editing procedure, but with a prompt that describes the change I want instead
+                of &ldquo;a high quality photo.&rdquo; Lower starting times give the prompt more room to change
+                the image, and higher ones keep more of the original.
+            </p>
+
+            <h3>Campanile &rarr; Giant Pencil</h3>
+            <p class="group-label">&ldquo;a photograph of a giant pencil&rdquo;</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_campanile_original.jpg" alt="Original Campanile photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t002.jpg" alt="A giant sharpened pencil standing on a campus street" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t004.jpg" alt="A giant pencil with a blue tip next to a long building" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t006.jpg" alt="A giant pencil with blue bands rising over trees" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t010.jpg" alt="A tower shaped and colored like a pencil" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t014.jpg" alt="The obelisk tower with a faint pencil tint" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t025.jpg" alt="The Campanile with belfry arches, no pencil left" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_campanile_t050.jpg" alt="Close to the original Campanile" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                From 0.02 to 0.06 the tower is replaced by a giant pencil standing in the same spot, with the
+                sky, the cloud, and the trees kept. At 0.10 I get a mix of both, a tower painted like a pencil.
+                By 0.25 the prompt has no visible effect anymore.
+            </p>
+
+            <h3>Waterfall &rarr; House on the Waterfall</h3>
+            <p class="group-label">&ldquo;a photograph of a house on the waterfall&rdquo;</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_my_image_1_original.jpg" alt="Original waterfall photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t002.jpg" alt="A wooden house above a wide cascading waterfall" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t004.jpg" alt="A two-story house above a wide cascade" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t006.jpg" alt="A brick house beside a tall waterfall" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t010.jpg" alt="A cottage perched on top of the cliff the waterfall pours from" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t014.jpg" alt="A stone house built into the cliff, with the waterfall pouring through it" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t025.jpg" alt="A building merged into the right-hand cliff, next to the waterfall" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_1_t050.jpg" alt="The original waterfall with a faint structure in the cliff" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                My favorites are 0.10 and 0.14. The waterfall and the cliff stay where they were in my photo,
+                and the model builds a house right into the rock above them. At 0.25 the house is almost gone,
+                and only the cliff on the right keeps some walls and windows.
+            </p>
+
+            <h3>Beach Sunset &rarr; Boat</h3>
+            <p class="group-label">&ldquo;a photograph of a boat&rdquo;</p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./images/part_a/edit_my_image_2_original.jpg" alt="Original beach sunset photo" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t002.jpg" alt="Close-up of a blue and white fishing boat" loading="lazy">
+                    <figcaption>t = 0.02</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t004.jpg" alt="Close-up of a blue and white boat hull" loading="lazy">
+                    <figcaption>t = 0.04</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t006.jpg" alt="A small boat on the water at sunset" loading="lazy">
+                    <figcaption>t = 0.06</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t010.jpg" alt="A long, low blue boat lying along the horizon at sunset" loading="lazy">
+                    <figcaption>t = 0.10</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t014.jpg" alt="A long boat along the horizon, with the beach in front" loading="lazy">
+                    <figcaption>t = 0.14</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t025.jpg" alt="A faint boat on the horizon of the original sunset" loading="lazy">
+                    <figcaption>t = 0.25</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/text_edit_my_image_2_t050.jpg" alt="Close to the original sunset with a hint of a boat" loading="lazy">
+                    <figcaption>t = 0.50</figcaption>
+                </figure>
+            </div>
+            <p>
+                At 0.06 a small boat sits on the water in front of my sunset. From 0.10 to 0.25 the model
+                puts a long, flat boat exactly where the line of breaking waves was, the strongest
+                horizontal feature in the photo.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 3.3</p>
+            <h2>Visual Anagrams</h2>
+            <p>
+                A visual anagram looks like one prompt upright and another upside down. At every Euler step I
+                compute the guided velocity for prompt 1 on the image, and for prompt 2 on the image rotated
+                180&deg;. I rotate the second velocity back, average the two, and take the step. Rotating
+                twice gives back the original image, which I checked with an assert.
+            </p>
+
+            <div class="eq-block" data-label="Visual Anagram Velocity">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>v</mi><mn>1</mn></msub><mo>=</mo><msub><mi>v</mi><mtext>cfg</mtext></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><msub><mi>c</mi><mn>1</mn></msub><mo stretchy="false">)</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>v</mi><mn>2</mn></msub><mo>=</mo><mi>F</mi><mo stretchy="false">(</mo><msub><mi>v</mi><mtext>cfg</mtext></msub><mo stretchy="false">(</mo><mi>F</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo stretchy="false">)</mo><mo>,</mo><mi>t</mi><mo>,</mo><msub><mi>c</mi><mn>2</mn></msub><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>v</mi><mo>=</mo><mfrac><mrow><msub><mi>v</mi><mn>1</mn></msub><mo>+</mo><msub><mi>v</mi><mn>2</mn></msub></mrow><mn>2</mn></mfrac></mrow></math>
+                </div>
+            </div>
+
+            <h3>Crowd &harr; City</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_a/anagram_0.jpg" alt="Watercolor of a crowd of people walking" loading="lazy">
+                    <figcaption>Upright &middot; &ldquo;a watercolor of a crowd&rdquo;</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/anagram_0_rotated.jpg" alt="The same watercolor rotated 180 degrees, showing a city skyline" loading="lazy">
+                    <figcaption>Rotated 180&deg; &middot; &ldquo;a watercolor of a major city&rdquo;</figcaption>
+                </figure>
+            </div>
+            <p>
+                This one worked really well. The people&rsquo;s bodies turn into skyscrapers when flipped,
+                and their heads become the reflections in the water under the city.
+            </p>
+
+            <h3>Castle &harr; Flower</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_a/anagram_1.jpg" alt="Oil painting of an orange castle with domed turrets" loading="lazy">
+                    <figcaption>Upright &middot; &ldquo;an oil painting of a castle&rdquo;</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_a/anagram_1_rotated.jpg" alt="The same painting rotated 180 degrees, showing an orange lily on a green stem" loading="lazy">
+                    <figcaption>Rotated 180&deg; &middot; &ldquo;an oil painting of a flower&rdquo;</figcaption>
+                </figure>
+            </div>
+            <p>
+                The castle&rsquo;s spire becomes the flower&rsquo;s green stem, and the orange turrets become
+                the petals. 
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 3.4</p>
+            <h2>Hybrid Images</h2>
+            <p>
+                This is the flow-model version of Project 2&rsquo;s hybrid images, following Factorized
+                Diffusion. At every Euler step I combine the low frequencies of the velocity for one prompt
+                with the high frequencies of the velocity for another. The low-pass filter is a Gaussian blur
+                with kernel size 265 and &sigma; = 16, and the high-pass is the velocity minus its low-pass.
+                Prompt 1 is what you see from far away, and prompt 2 is what you see up close.
+            </p>
+
+            <div class="eq-block" data-label="Hybrid Velocity">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>v</mi><mo>=</mo><msub><mi>f</mi><mtext>low</mtext></msub><mo stretchy="false">(</mo><msub><mi>v</mi><mtext>cfg</mtext></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><msub><mi>c</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo>+</mo><msub><mi>f</mi><mtext>high</mtext></msub><mo stretchy="false">(</mo><msub><mi>v</mi><mtext>cfg</mtext></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><msub><mi>c</mi><mn>2</mn></msub><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+
+            <h3>Elephant + Jungle</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_a/hybrid_0.jpg" alt="Watercolor of jungle leaves and palm fronds arranged in the shape of an elephant head" loading="lazy">
+                    <figcaption>Close &middot; &ldquo;a watercolor of a jungle&rdquo;</figcaption>
+                </figure>
+                <figure class="far">
+                    <img src="./images/part_a/hybrid_0_small.png" alt="The same hybrid shrunk to 64 by 64 pixels, where it reads as an elephant head" width="64" height="64" loading="lazy">
+                    <figcaption>Far (64&times;64) &middot; &ldquo;a watercolor of an elephant&rsquo;s head&rdquo;</figcaption>
+                </figure>
+            </div>
+            <p>
+                Up close it is a watercolor of jungle leaves and palm fronds. Shrunk down, the leaves group
+                into an elephant&rsquo;s head, with two wide ears and a trunk running down the middle.
+            </p>
+
+            <h3>Dinosaur Skull + Mountains</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_a/hybrid_1.jpg" alt="Sepia lithograph of a mountain range" loading="lazy">
+                    <figcaption>Close &middot; &ldquo;a lithograph of mountains&rdquo;</figcaption>
+                </figure>
+                <figure class="far">
+                    <img src="./images/part_a/hybrid_1_small.png" alt="The same hybrid shrunk to 64 by 64 pixels, where it reads as a dinosaur skull" width="64" height="64" loading="lazy">
+                    <figcaption>Far (64&times;64) &middot; &ldquo;a lithograph of a dinosaur skull&rdquo;</figcaption>
+                </figure>
+            </div>
+            <p>
+                Up close it is a sepia lithograph of a mountain range. Shrunk down, the peaks merge into a
+                dinosaur skull, with the dark gap between the two main peaks as the eye socket and the lower
+                ridges as the jaw.
+            </p>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- PART B                                                             -->
+        <!-- ================================================================== -->
+
+        <section class="part chapter" id="part-b">
+            <p class="part-label">Part B</p>
+            <h2>Flow Matching from Scratch</h2>
+            <p>
+                In Part B, I build and train my own UNet on MNIST: first as a one-step denoiser, then as a
+                flow matching model conditioned on time, and finally on time and digit class. All models
+                were trained on an A100 in Colab with seed 180. MNIST pixels are in [0, 1].
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1.1</p>
+            <h2>Implementing the UNet</h2>
+            <p>
+                The UNet downsamples a 28&times;28 digit twice to 7&times;7, flattens it to a 1&times;1
+                bottleneck, and then upsamples back. Skip connections concatenate the encoder features with
+                the decoder features at each resolution. Each simple op is a convolution followed by
+                BatchNorm and GELU: Conv is 3&times;3 with stride 1, DownConv is
+                3&times;3 with stride 2, and UpConv is a 4&times;4 transposed convolution with
+                stride 2. Flatten is a 7&times;7 average pool, and Unflatten is a
+                7&times;7 transposed convolution. The composed blocks add a ConvBlock (two
+                Convs) after each down or up step.
+            </p>
+
+            <ol class="steps">
+                <li>ConvBlock 1 &rarr; D at 28&times;28 (skip 1)</li>
+                <li>DownBlock D &rarr; D at 14&times;14 (skip 2)</li>
+                <li>DownBlock D &rarr; 2D at 7&times;7 (skip 3)</li>
+                <li>Flatten to 1&times;1, then Unflatten back to 7&times;7</li>
+                <li>UpBlock on [skip 3, unflatten], 4D &rarr; D at 14&times;14</li>
+                <li>UpBlock on [skip 2, up 1], 2D &rarr; D at 28&times;28</li>
+                <li>ConvBlock on [skip 1, up 2], 2D &rarr; D, then a 3&times;3 conv to 1 channel</li>
+            </ol>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1.2</p>
+            <h2>Using the UNet to Train a Denoiser</h2>
+            <p>
+                To make training pairs, I noise a clean digit <i>x</i> with Gaussian noise scaled by
+                &sigma;, and the UNet learns to map the noisy <i>z</i> back to <i>x</i> with an L2 loss. Each
+                row below uses one fixed noise sample on the first ten test digits, for &sigma; from 0 to 1.
+            </p>
+
+            <div class="eq-block" data-label="Noising and Denoising Loss">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>z</mi><mo>=</mo><mi>x</mi><mo>+</mo><mi>&#x03C3;</mi><mi>&#x03B5;</mi><mo>,</mo><mspace width="0.6em"/><mi>&#x03B5;</mi><mo>&#x223C;</mo><mi mathvariant="script">N</mi><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mi>I</mi><mo stretchy="false">)</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi mathvariant="script">L</mi><mo>=</mo><msub><mi>&#x1D53C;</mi><mrow><mi>z</mi><mo>,</mo><mi>x</mi></mrow></msub><msup><mrow><mo>&#x2016;</mo><msub><mi>D</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo><mo>&#x2212;</mo><mi>x</mi><mo>&#x2016;</mo></mrow><mn>2</mn></msup></mrow></math>
+                </div>
+            </div>
+
+            <div class="digit-rows">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.0</p>
+                <img src="./images/part_b/noise_sigma00.png" alt="Ten clean test digits: 7, 2, 1, 0, 4, 1, 4, 9, 5, 9" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.2</p>
+                <img src="./images/part_b/noise_sigma02.png" alt="The ten digits with light noise" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.4</p>
+                <img src="./images/part_b/noise_sigma04.png" alt="The ten digits with moderate noise" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.5</p>
+                <img src="./images/part_b/noise_sigma05.png" alt="The ten digits with the training noise level" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.6</p>
+                <img src="./images/part_b/noise_sigma06.png" alt="The ten digits with heavier noise" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 0.8</p>
+                <img src="./images/part_b/noise_sigma08.png" alt="The ten digits with heavy noise, strokes hard to see" loading="lazy">
+                <p class="row-label"><span class="keep-case">&sigma;</span> = 1.0</p>
+                <img src="./images/part_b/noise_sigma10.png" alt="The ten digits with very heavy noise, barely visible" loading="lazy">
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1.2.1</p>
+            <h2>Training</h2>
+            <p>
+                I trained the denoiser for 5 epochs at &sigma; = 0.5 on the MNIST training set. The noise is
+                drawn fresh every time a batch is loaded, so the network never sees the same noisy image
+                twice.
+            </p>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Data</p>
+                    <h4>Batch 256</h4>
+                    <p>Shuffled MNIST training set, 5 epochs (1,175 steps).</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Model</p>
+                    <h4>D = 128</h4>
+                    <p>The unconditional UNet from Section 1.1.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Optimizer</p>
+                    <h4>Adam, 1e-4</h4>
+                    <p>MSE loss against the clean digit.</p>
+                </div>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="./images/part_b/loss_denoiser.png" alt="Training loss curve: drops from about 0.19 to under 0.02 in the first 100 steps, then slowly to about 0.008" loading="lazy">
+                    <figcaption>Training loss (light: per step, dark: 100-step average)</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Test Set Results &middot; <span class="keep-case">&sigma;</span> = 0.5</p>
+            <div class="digit-rows">
+                <p class="row-label">Clean</p>
+                <img src="./images/part_b/denoise_epoch1_clean.png" alt="Ten clean test digits" loading="lazy">
+                <p class="row-label">Noisy</p>
+                <img src="./images/part_b/denoise_epoch1_noisy.png" alt="The test digits with noise at sigma 0.5" loading="lazy">
+                <p class="row-label">Epoch 1</p>
+                <img src="./images/part_b/denoise_epoch1_denoised.png" alt="Denoised after epoch 1: readable, slightly soft digits with faint smudges" loading="lazy">
+                <p class="row-label">Epoch 5</p>
+                <img src="./images/part_b/denoise_epoch5_denoised.png" alt="Denoised after epoch 5: clean, sharp digits" loading="lazy">
+            </div>
+            <p>
+                The loss falls very fast in the first 100 steps and then keeps creeping down. After one epoch
+                every digit is already readable, but the strokes are a bit soft and the 1s and 4s have faint
+                smudges around them. After five epochs the strokes are sharper and the background is clean.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1.2.2</p>
+            <h2>Out-of-Distribution Testing</h2>
+            <p>
+                The denoiser was only trained at &sigma; = 0.5. Here I keep the same three test digits and
+                the same noise sample, and vary &sigma;.
+            </p>
+
+            <div class="digit-rows" style="--cells: 7">
+                <p class="row-label"><span class="keep-case">&sigma;</span></p>
+                <div class="digit-head">
+                    <span>0.0</span><span>0.2</span><span>0.4</span><span>0.5</span><span>0.6</span><span>0.8</span><span>1.0</span>
+                </div>
+                <p class="row-label">Noisy</p>
+                <img src="./images/part_b/ood_digit0_noisy.png" alt="Digit 7 with sigma from 0 to 1" loading="lazy">
+                <p class="row-label">Denoised</p>
+                <img src="./images/part_b/ood_digit0_denoised.png" alt="Denoised 7s: clean up to 0.6, extra strokes at 0.8 and 1.0" loading="lazy">
+                <p class="row-label">Noisy</p>
+                <img src="./images/part_b/ood_digit1_noisy.png" alt="Digit 2 with sigma from 0 to 1" loading="lazy">
+                <p class="row-label">Denoised</p>
+                <img src="./images/part_b/ood_digit1_denoised.png" alt="Denoised 2s: clean up to 0.8, small artifacts at 1.0" loading="lazy">
+                <p class="row-label">Noisy</p>
+                <img src="./images/part_b/ood_digit2_noisy.png" alt="Digit 1 with sigma from 0 to 1" loading="lazy">
+                <p class="row-label">Denoised</p>
+                <img src="./images/part_b/ood_digit2_denoised.png" alt="Denoised 1s: clean up to 0.6, turns into a looped scribble at 0.8 and 1.0" loading="lazy">
+            </div>
+            <p>
+                Up to &sigma; = 0.6 the denoiser works almost perfectly, and at &sigma; = 0 it simply passes
+                the digit through. Above the training level it breaks down: at 0.8 and 1.0 it leaves noise
+                behind and starts inventing strokes. The 7 picks up extra marks, and the 1 turns into a
+                looped scribble. It learned to remove noise of one specific strength, so stronger noise gets
+                read as part of the digit.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1.2.3</p>
+            <h2>Denoising Pure Noise</h2>
+            <p>
+                To try using the denoiser as a generator, I trained a fresh D = 128 UNet with the same
+                settings, but the input is now pure Gaussian noise and the target is still a clean digit.
+            </p>
+
+            <div class="figures single">
+                <figure>
+                    <img src="./images/part_b/loss_pure_noise.png" alt="Training loss for pure noise denoising: drops to about 0.067 within 100 steps and stays flat" loading="lazy">
+                    <figcaption>Training loss</figcaption>
+                </figure>
+            </div>
+
+            <div class="digit-rows" style="--cells: 3">
+                <p class="row-label">Input</p>
+                <img src="./images/part_b/pure_noise_epoch1_input.png" alt="Three pure noise inputs" loading="lazy">
+                <p class="row-label">Epoch 1</p>
+                <img src="./images/part_b/pure_noise_epoch1_output.png" alt="Three identical blurry gray blobs" loading="lazy">
+                <p class="row-label">Epoch 5</p>
+                <img src="./images/part_b/pure_noise_epoch5_output.png" alt="Three identical blurry gray blobs, the same as epoch 1" loading="lazy">
+            </div>
+
+            <p class="group-label">Prediction vs. Mean Training Digit</p>
+            <div class="figures far-pair">
+                <figure>
+                    <img src="./images/part_b/pure_noise_prediction.png" alt="The model's prediction from pure noise, a blurry blob" loading="lazy">
+                    <figcaption>Prediction</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/training_mean.png" alt="The pixel-wise mean of all MNIST training digits, a nearly identical blob" loading="lazy">
+                    <figcaption>Mean of training set</figcaption>
+                </figure>
+            </div>
+            <p>
+                Every output is the same blurry blob, no matter which noise goes in, and epochs 1 and 5 look
+                the same. The blob is almost identical to the pixel-wise mean of all 60,000 training digits:
+                a soft oval that looks like a faint 0 and 8 laid on top of each other. The input noise is independent of the
+                target digit, so it carries no information about which digit to produce. Under an MSE loss,
+                the best single answer is then the point closest to all training images on average, their
+                centroid, which is the mean image. The loss plateaus around 0.067 because that is the
+                average per-pixel variance of the digits around the mean, the lowest error any prediction
+                that ignores its input can reach. One-step denoising can&rsquo;t generate digits,
+                which is why Part 2 switches to iterative flow matching.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.1</p>
+            <h2>Adding Time Conditioning to the UNet</h2>
+            <p>
+                Flow matching moves from noise <i>x</i><sub>0</sub> to a digit <i>x</i><sub>1</sub> along a
+                straight line, and the UNet learns the velocity of that line. Because the right velocity
+                depends on <i>t</i>, the UNet needs <i>t</i> as an input. Two fully connected blocks,
+                FCBlock (Linear&ndash;GELU&ndash;Linear), embed the scalar <i>t</i> &isin; [0, 1]. The first one
+                (2D channels) scales the unflatten output, and the second one (D channels) scales the output
+                of the first up block.
+            </p>
+
+            <div class="eq-block" data-label="Flow Matching">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>x</mi><mi>t</mi></msub><mo>=</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>t</mi><mo stretchy="false">)</mo><msub><mi>x</mi><mn>0</mn></msub><mo>+</mo><mi>t</mi><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><mspace width="0.6em"/><msub><mi>x</mi><mn>0</mn></msub><mo>&#x223C;</mo><mi mathvariant="script">N</mi><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mi>I</mi><mo stretchy="false">)</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi mathvariant="script">L</mi><mo>=</mo><mi>&#x1D53C;</mi><msup><mrow><mo>&#x2016;</mo><msub><mi>u</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo stretchy="false">)</mo><mo>&#x2212;</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>&#x2212;</mo><msub><mi>x</mi><mn>0</mn></msub><mo stretchy="false">)</mo><mo>&#x2016;</mo></mrow><mn>2</mn></msup></mrow></math>
+                </div>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.2</p>
+            <h2>Training the Time-Conditioned UNet</h2>
+            <p>
+                Each training step picks a batch of digits, a random <i>t</i> for each one, and fresh noise.
+                It builds <i>x</i><sub><i>t</i></sub> and regresses the UNet output onto
+                <i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub>.
+            </p>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Data</p>
+                    <h4>Batch 64</h4>
+                    <p>Shuffled MNIST, 10 epochs (9,380 steps).</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Model</p>
+                    <h4>D = 64</h4>
+                    <p>Time-conditioned UNet, <i>t</i> sampled uniformly in [0, 1].</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Optimizer</p>
+                    <h4>Adam, 1e-2</h4>
+                    <p>ExponentialLR with &gamma; = 0.1<sup>1/10</sup>, stepped each epoch.</p>
+                </div>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="./images/part_b/loss_time.png" alt="Training loss for the time-conditioned UNet: a spike near 15 at the start, then quickly near 0.1 for the rest of training" loading="lazy">
+                    <figcaption>Training loss</figcaption>
+                </figure>
+            </div>
+            <p>
+                The loss starts near 15 because the high initial learning rate makes the first predictions
+                very large, but it drops below 1 within a few dozen steps and settles around 0.1. The
+                scheduler shrinks the learning rate tenfold over the 10 epochs, from 1e-2 to 1e-3.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.3</p>
+            <h2>Sampling from the Time-Conditioned UNet</h2>
+            <p>
+                To sample, I start 40 images from Gaussian noise at <i>t</i> = 0 and take 50 Euler steps
+                with the predicted velocity. Every epoch uses the same seed, so each cell starts from the
+                same noise in all three grids.
+            </p>
+
+            <div class="figures wide digits">
+                <figure>
+                    <img src="./images/part_b/time_epoch_1.png" alt="Samples after epoch 1: blobby, broken strokes, few legible digits" loading="lazy">
+                    <figcaption>Epoch 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/time_epoch_5.png" alt="Samples after epoch 5: most samples are digit-like strokes" loading="lazy">
+                    <figcaption>Epoch 5</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/time_epoch_10.png" alt="Samples after epoch 10: mostly legible digits with smoother strokes" loading="lazy">
+                    <figcaption>Epoch 10</figcaption>
+                </figure>
+            </div>
+            <p>
+                After one epoch the samples are blobby, broken strokes. By epoch 5 most of them are
+                connected, digit-like shapes, and many are readable 0s, 1s, 4s, and 9s. By epoch 10 the
+                strokes are smooth and most samples are legible, though a few are still ambiguous shapes
+                somewhere between two digits. Because the noise is fixed, you can watch the same sample improve: the
+                1 in the second column and the 0 in the second row stay put and get cleaner.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.4</p>
+            <h2>Adding Class Conditioning to the UNet</h2>
+            <p>
+                To control which digit gets generated, I also condition on the class as a one-hot vector.
+                Two more FCBlock modules embed it. The class embedding scales the unflatten output and the
+                output of the first up block, and the time embedding shifts them. To keep an unconditional mode for classifier-free guidance,
+                the class vector is zeroed out 10% of the time during training.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.5</p>
+            <h2>Training the Class-Conditioned UNet</h2>
+            <p>
+                Training is the same as the time-only model (batch 64, D = 64, Adam at 1e-2 with the same
+                exponential schedule, 10 epochs), plus the class labels and the 10% dropout mask. I saved
+                checkpoints after epochs 1, 5, and 10.
+            </p>
+
+            <div class="figures single">
+                <figure>
+                    <img src="./images/part_b/loss_class_scheduler.png" alt="Training loss for the class-conditioned UNet with the scheduler: a spike near 9 at the start, then near 0.1" loading="lazy">
+                    <figcaption>Training loss</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2.6</p>
+            <h2>Sampling from the Class-Conditioned UNet</h2>
+            <p>
+                Sampling uses 300 Euler steps and classifier-free guidance with &gamma; = 5. Note that Part B
+                writes guidance as <i>u</i> = <i>u</i><sub>u</sub> + &gamma;(<i>u</i><sub>c</sub> &minus;
+                <i>u</i><sub>u</sub>), so &gamma; = 1 is plain conditional sampling. Each grid shows four
+                samples of every digit, with columns 0 through 9.
+            </p>
+
+            <div class="eq-block" data-label="Classifier-Free Guidance (Part B)">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>u</mi><mo>=</mo><msub><mi>u</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mn>&#x2205;</mn><mo stretchy="false">)</mo><mo>+</mo><mi>&#x03B3;</mi><mo stretchy="false">(</mo><msub><mi>u</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mi>c</mi><mo stretchy="false">)</mo><mo>&#x2212;</mo><msub><mi>u</mi><mi>&#x03B8;</mi></msub><mo stretchy="false">(</mo><msub><mi>x</mi><mi>t</mi></msub><mo>,</mo><mi>t</mi><mo>,</mo><mn>&#x2205;</mn><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures wide digits">
+                <figure>
+                    <img src="./images/part_b/class_scheduler_samples_epoch1.png" alt="Class-conditioned samples after epoch 1: correct digits in every column but thick, rough strokes with specks" loading="lazy">
+                    <figcaption>Epoch 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/class_scheduler_samples_epoch5.png" alt="Class-conditioned samples after epoch 5: clean, well-formed digits 0 to 9" loading="lazy">
+                    <figcaption>Epoch 5</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/class_scheduler_samples_epoch10.png" alt="Class-conditioned samples after epoch 10: clean, smooth digits 0 to 9 with varied styles" loading="lazy">
+                    <figcaption>Epoch 10</figcaption>
+                </figure>
+            </div>
+            <p>
+                Class conditioning makes a huge difference. Even after one epoch almost every sample is the
+                right digit, although the strokes are thick and rough with stray specks. By epoch 5 the
+                digits are clean, and by epoch 10 they are smooth while the four samples of each digit still
+                vary in slant and style.
+            </p>
+
+            <h3>Removing the Learning Rate Scheduler</h3>
+            <p>
+                The exponential scheduler starts at 1e-2 and ends at 1e-3. The high early rate is only
+                there for speed, and it is also what causes the large loss spike at the start. To compensate
+                for removing the scheduler, I trained a second, independent model with a constant learning
+                rate of 1e-3, the value the scheduler ends at. Adam adapts its step size per parameter, so
+                1e-3 is still fast enough to converge in 10 epochs, and it avoids the unstable start.
+                Everything else is unchanged.
+            </p>
+
+            <div class="figures">
+                <figure>
+                    <img src="./images/part_b/loss_class_scheduler.png" alt="Loss with the scheduler, starting near 9" loading="lazy">
+                    <figcaption>With scheduler (1e-2 &rarr; 1e-3)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/loss_class_no_scheduler.png" alt="Loss with a constant learning rate, starting near 1.5 and settling around 0.08" loading="lazy">
+                    <figcaption>Constant 1e-3</figcaption>
+                </figure>
+            </div>
+
+            <div class="figures wide digits">
+                <figure>
+                    <img src="./images/part_b/class_no_scheduler_samples_epoch1.png" alt="No-scheduler samples after epoch 1: already clean digits 0 to 9" loading="lazy">
+                    <figcaption>No scheduler &middot; Epoch 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/class_no_scheduler_samples_epoch5.png" alt="No-scheduler samples after epoch 5: clean digits 0 to 9" loading="lazy">
+                    <figcaption>No scheduler &middot; Epoch 5</figcaption>
+                </figure>
+                <figure>
+                    <img src="./images/part_b/class_no_scheduler_samples_epoch10.png" alt="No-scheduler samples after epoch 10: clean digits 0 to 9, comparable to the scheduled model" loading="lazy">
+                    <figcaption>No scheduler &middot; Epoch 10</figcaption>
+                </figure>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">With Scheduler</p>
+                    <h4>Loss 0.0854</h4>
+                    <p>Average over the last 500 steps. Starts with a spike near 9.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Constant 1e-3</p>
+                    <h4>Loss 0.0838</h4>
+                    <p>Average over the last 500 steps. Starts near 1.5.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Verdict</p>
+                    <h4>Same Quality</h4>
+                    <p>The epoch 10 samples are comparable, so the scheduler is not needed.</p>
+                </div>
+            </div>
+            <p>
+                Without the scheduler the model is just as good. The final loss is even slightly lower
+                (0.0838 vs. 0.0854), and the epoch 10 samples are just as clean. The constant-rate model is
+                actually better early on: its epoch 1 samples are already mostly clean, while the scheduled
+                model&rsquo;s epoch 1 samples are still rough from the unstable start at 1e-2. One small
+                difference is that the 5 in the third row stays a little broken in the constant-rate model.
+            </p>
+        </section>
+
+        <section class="part">
+            <h2>Takeaway</h2>
+            <p>
+                The most interesting thing I learned is the idea of an image manifold. Real images take up a
+                tiny, structured part of the space of all possible pixel values, and a flow model learns how
+                to get there. It is amazing that we can start from pure noise and end up with a real image,
+                or take a rough drawing and pull it onto that manifold to get a photo. This makes me wonder
+                whether we can do the same for robotics. If the actions that actually complete a task also
+                lie on a manifold, an action manifold, then a robot could start from random actions and
+                refine them into useful ones, conditioned on what it sees, just like I refined noise into
+                digits conditioned on a class.
+            </p>
+        </section>
+
+    </div>
+
+    <div class="back">
+        <a class="pill" href="../index.html">Back to Portfolio</a>
+    </div>
+</body>
+</html>

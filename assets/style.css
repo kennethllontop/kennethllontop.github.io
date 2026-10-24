@@ -600,3 +600,74 @@ figcaption math {
 }
 
 .fd-eq .eq { font-size: clamp(1.3rem, 3vw, 1.9rem); }
+
+/*Project 3*/
+
+/* Part A / Part B openers: a larger heading than a regular section */
+.chapter { scroll-margin-top: 2rem; }
+
+.part.chapter h2 { font-size: clamp(1.75rem, 4.6vw, 3rem); }
+
+.part.chapter .part-label { font-size: clamp(0.95rem, 2vw, 1.25rem); }
+
+/* Several display equations stacked inside one equation panel */
+.eq-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.eq-stack .eq { font-size: clamp(1.25rem, 3.2vw, 2rem); }
+
+/* Hybrid images viewed from afar: shown at their true downsampled size */
+.figures figure.far {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Small single digits shown side by side */
+.figures.far-pair img { width: 8rem; }
+
+/* Rows of MNIST digits with a label on the left; --cells is the digits per row */
+.digit-rows {
+    max-width: calc(var(--cells, 10) * 6rem + 7rem);
+    margin: 2rem auto 0;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.75rem 1rem;
+    align-items: center;
+}
+
+.group-label + .digit-rows { margin-top: 1rem; }
+
+.part .digit-rows .row-label {
+    max-width: none;
+    margin: 0;
+    font-size: clamp(0.7rem, 1.5vw, 0.95rem);
+    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-align: right;
+    text-transform: uppercase;
+    color: var(--cream);
+}
+
+.digit-rows img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Column headings (such as noise levels) over a digit row */
+.digit-head {
+    display: grid;
+    grid-template-columns: repeat(var(--cells, 10), minmax(0, 1fr));
+    gap: 0.5%;
+    font-size: clamp(0.75rem, 1.5vw, 1rem);
+    letter-spacing: 0.06em;
+    color: var(--cream);
+}
+
+/* MNIST sample grids: 10 digits across is plenty without filling the full column */
+.figures.wide.digits { max-width: 48rem; margin-inline: auto; }
