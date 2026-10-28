@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project 4: Image Warping and Mosaicing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Forum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <h1 class="project-title">Project 4: Image Warping and Mosaicing</h1>
+
+    <img class="crest small" src="../assets/bridge-palms.svg"
+         alt="Vincent Thomas Bridge framed by palm trees" width="496" height="190">
+
+    <nav>
+        <a class="pill" href="#part-a">Part A</a>
+        <a class="pill" href="#part-b">Part B</a>
+    </nav>
+
+    <div class="parts">
+
+        <!-- ================================================================== -->
+        <!-- PART A                                                             -->
+        <!-- ================================================================== -->
+
+        <section class="part chapter" id="part-a">
+            <p class="part-label">Part A</p>
+            <h2>Image Warping and Mosaicing</h2>
+            <p>
+                In Part A, we are exploring image warping and mosaics. I decided to capture my freshman
+                and senior year dorm experience by taking pictures of Foothill. I fixed the center of
+                projection, rotated my camera between shots, and stitched the pictures into a mosaic. In
+                order to create the mosaic, I had to find corresponding points, recover the homography
+                between the two images, warp one image into the other&rsquo;s frame with inverse warping,
+                and finally blend them together. I wrote the homography solver, both interpolation
+                methods, and the blending myself, without using the built-in homography or warping
+                functions from OpenCV or scikit-image.
+            </p>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Homography</p>
+                    <h4>Least Squares</h4>
+                    <p>21 hand-clicked correspondences per pair give an overdetermined system for the 8 unknowns.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Warping</p>
+                    <h4>Inverse, Bilinear</h4>
+                    <p>Each output pixel is mapped back through H<sup>&minus;1</sup> and sampled from the source image.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Blending</p>
+                    <h4>Weighted Average</h4>
+                    <p>Each image is weighted by its distance to its own border, so seams fade out.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 1</p>
+            <h2>Shooting the Pictures</h2>
+            <p>
+                I took three pairs of photos right outside my dorm. For each pair of images, I held the
+                phone in place and only rotated it, which keeps the center of projection fixed so the
+                two images are related by a homography. Each pair overlaps by roughly half the frame,
+                which leaves plenty of shared detail (windows, railings, doors) to click on. Fun Fact:
+                Building 8 is my senior year dorm, while Building 9 was my freshman year dorm.
+            </p>
+
+            <h3>Foothill Building 8</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_8_1.jpg" alt="Left view of a paved walkway with a railing and bare tree, apartment building in the distance" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_8_2.jpg" alt="Right view of the same walkway, showing the shingled building and hedges along the path" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+
+            <h3>Foothill Building 9</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_9_1.jpg" alt="Left view from a stairway railing toward a lit wooden building behind a tree" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_9_2.jpg" alt="Right view of the same building with a street lamp and sunset sky" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+
+            <h3>The Stairs to My Dorm</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/stairs_1.jpg" alt="Left view of a covered passage with an evacuation map and a yellow cover on the wall" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/stairs_2.jpg" alt="Right view of the same passage, showing a staircase and parked bikes" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 2</p>
+            <h2>Recovering Homographies</h2>
+            <p>
+                A homography maps a point <i>p</i> = (<i>x</i>, <i>y</i>, 1) in one image to
+                <i>p&prime;</i> = <i>Hp</i> in the other, up to a scale <i>w</i>. Fixing the bottom-right
+                entry to 1 leaves 8 unknowns. Dividing out <i>w</i> and moving everything to one side
+                turns each correspondence into two linear equations in those unknowns.
+            </p>
+
+            <div class="eq-block" data-label="One Correspondence, Two Equations">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mi>w</mi><msup><mi>x</mi><mo>&#x2032;</mo></msup></mtd></mtr><mtr><mtd><mi>w</mi><msup><mi>y</mi><mo>&#x2032;</mo></msup></mtd></mtr><mtr><mtd><mi>w</mi></mtd></mtr></mtable><mo>]</mo></mrow><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><msub><mi>h</mi><mn>11</mn></msub></mtd><mtd><msub><mi>h</mi><mn>12</mn></msub></mtd><mtd><msub><mi>h</mi><mn>13</mn></msub></mtd></mtr><mtr><mtd><msub><mi>h</mi><mn>21</mn></msub></mtd><mtd><msub><mi>h</mi><mn>22</mn></msub></mtd><mtd><msub><mi>h</mi><mn>23</mn></msub></mtd></mtr><mtr><mtd><msub><mi>h</mi><mn>31</mn></msub></mtd><mtd><msub><mi>h</mi><mn>32</mn></msub></mtd><mtd><mn>1</mn></mtd></mtr></mtable><mo>]</mo></mrow><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mi>x</mi></mtd></mtr><mtr><mtd><mi>y</mi></mtd></mtr><mtr><mtd><mn>1</mn></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mrow><mo>[</mo><mtable columnspacing="0.6em"><mtr><mtd><mi>x</mi></mtd><mtd><mi>y</mi></mtd><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mi>x</mi><msup><mi>x</mi><mo>&#x2032;</mo></msup></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mi>y</mi><msup><mi>x</mi><mo>&#x2032;</mo></msup></mrow></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mi>x</mi></mtd><mtd><mi>y</mi></mtd><mtd><mn>1</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mi>x</mi><msup><mi>y</mi><mo>&#x2032;</mo></msup></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mi>y</mi><msup><mi>y</mi><mo>&#x2032;</mo></msup></mrow></mtd></mtr></mtable><mo>]</mo></mrow><mi mathvariant="bold">h</mi><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><msup><mi>x</mi><mo>&#x2032;</mo></msup></mtd></mtr><mtr><mtd><msup><mi>y</mi><mo>&#x2032;</mo></msup></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi mathvariant="bold">h</mi><mo>=</mo><msup><mrow><mo>[</mo><mtable columnspacing="0.5em"><mtr><mtd><msub><mi>h</mi><mn>11</mn></msub></mtd><mtd><msub><mi>h</mi><mn>12</mn></msub></mtd><mtd><msub><mi>h</mi><mn>13</mn></msub></mtd><mtd><msub><mi>h</mi><mn>21</mn></msub></mtd><mtd><msub><mi>h</mi><mn>22</mn></msub></mtd><mtd><msub><mi>h</mi><mn>23</mn></msub></mtd><mtd><msub><mi>h</mi><mn>31</mn></msub></mtd><mtd><msub><mi>h</mi><mn>32</mn></msub></mtd></mtr></mtable><mo>]</mo></mrow><mi>T</mi></msup></mrow></math>
+                </div>
+            </div>
+
+            <p>
+                With exactly 4 points, the system has a unique solution, but a couple of pixels of
+                clicking error can throw it off. So for the mosaics I clicked 21 points per pair and
+                solved the stacked 42&times;8 system with least squares. The result is the homography
+                that maps image 1 points onto image 2 points.
+            </p>
+
+            <h3>Correspondences</h3>
+            <p>
+                I clicked the correspondences using this
+                <a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html">point correspondence tool</a>.
+                I focused on features that were easy to identify in both images such as corners, window
+                frames, railings, and door edges. Below are the correspondences visualized. The numbers
+                match each point to its corresponding partner.
+            </p>
+
+            <p class="group-label">Foothill Building 8</p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_8_1_building_8_2_points_1.jpg" alt="Foothill Building 8 image 1 with 21 numbered red points on the building windows and railing" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_8_1_building_8_2_points_2.jpg" alt="Foothill Building 8 image 2 with the same 21 numbered points" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Foothill Building 9</p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_9_1_building_9_2_points_1.jpg" alt="Foothill Building 9 image 1 with 21 numbered points on the building windows and walls" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_9_1_building_9_2_points_2.jpg" alt="Foothill Building 9 image 2 with the same 21 numbered points" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">The Stairs to My Dorm</p>
+            <div class="figures">
+                <figure>
+                    <img src="./web/stairs_1_stairs_2_points_1.jpg" alt="Image 1 of the stairs to my dorm with 21 numbered points clustered on a storage cabinet at the end of the passage" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/stairs_1_stairs_2_points_2.jpg" alt="Image 2 of the stairs to my dorm with the same 21 numbered points on the cabinet" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+
+            <h3>The System for Foothill Building 8</h3>
+            <p>
+                Here are the first two correspondences of the Foothill Building 8 system. Point 0 is
+                (396, 189) in image 1 and (91, 203) in image 2, and point 1 is (404, 187) and
+                (98, 202). The full system keeps going like this for all 21 points.
+            </p>
+
+            <div class="eq-block" data-label="First 4 of 42 Rows">
+                <div class="eq-stack compact">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mrow><mo>[</mo><mtable columnspacing="0.9em"><mtr><mtd><mn>396</mn></mtd><mtd><mn>189</mn></mtd><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>36036</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>17199</mn></mrow></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>396</mn></mtd><mtd><mn>189</mn></mtd><mtd><mn>1</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>80388</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>38367</mn></mrow></mtd></mtr><mtr><mtd><mn>404</mn></mtd><mtd><mn>187</mn></mtd><mtd><mn>1</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>39592</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>18326</mn></mrow></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>404</mn></mtd><mtd><mn>187</mn></mtd><mtd><mn>1</mn></mtd><mtd><mrow><mo>&#x2212;</mo><mn>81608</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>37774</mn></mrow></mtd></mtr><mtr><mtd></mtd><mtd></mtd><mtd></mtd><mtd><mo>&#x22EE;</mo></mtd><mtd></mtd><mtd></mtd><mtd></mtd><mtd></mtd></mtr></mtable><mo>]</mo></mrow><mi mathvariant="bold">h</mi><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="0.8em"><mtr><mtd><mn>91</mn></mtd></mtr><mtr><mtd><mn>203</mn></mtd></mtr><mtr><mtd><mn>98</mn></mtd></mtr><mtr><mtd><mn>202</mn></mtd></mtr><mtr><mtd><mo>&#x22EE;</mo></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                </div>
+            </div>
+
+            <h3>Recovered Homographies</h3>
+            <p>
+                Solving each system gives the three mosaic homographies below. The bottom rows are
+                small but not zero, which is where the perspective comes from. Without them, H would
+                just be an affine transform.
+            </p>
+
+            <div class="eq-block" data-label="Image 1 &rarr; Image 2">
+                <div class="eq-stack compact">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>H</mi><mtext>Foothill Building 8</mtext></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="1em"><mtr><mtd><mrow><mn>1.8126</mn></mrow></mtd><mtd><mrow><mn>3.428</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>3</mn></mrow></msup></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>565.3</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>0.5648</mn></mrow></mtd><mtd><mrow><mn>1.6424</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>191.1</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>1.768</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>3</mn></mrow></msup></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>6.139</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>5</mn></mrow></msup></mrow></mtd><mtd><mn>1</mn></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>H</mi><mtext>Foothill Building 9</mtext></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="1em"><mtr><mtd><mrow><mn>1.6601</mn></mrow></mtd><mtd><mrow><mn>0.0642</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>363.5</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>0.3471</mn></mrow></mtd><mtd><mrow><mn>1.4469</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>116.0</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>1.316</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>3</mn></mrow></msup></mrow></mtd><mtd><mrow><mn>7.517</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>6</mn></mrow></msup></mrow></mtd><mtd><mn>1</mn></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>H</mi><mtext>Stairs to My Dorm</mtext></msub><mo>=</mo><mrow><mo>[</mo><mtable columnspacing="1em"><mtr><mtd><mrow><mn>1.3099</mn></mrow></mtd><mtd><mrow><mn>0.0575</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>540.2</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>0.1482</mn></mrow></mtd><mtd><mrow><mn>1.2891</mn></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>116.6</mn></mrow></mtd></mtr><mtr><mtd><mrow><mn>6.355</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>4</mn></mrow></msup></mrow></mtd><mtd><mrow><mo>&#x2212;</mo><mn>1.229</mn><mo>&#x00D7;</mo><msup><mn>10</mn><mrow><mo>&#x2212;</mo><mn>6</mn></mrow></msup></mrow></mtd><mtd><mn>1</mn></mtd></mtr></mtable><mo>]</mo></mrow></mrow></math>
+                </div>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 3</p>
+            <h2>Warping the Images</h2>
+            <p>
+                To warp an image, I first send its four corners through H and find the bounding box of
+                the output. Then, for every pixel in this box, I apply H<sup>&minus;1</sup> to
+                find where it came from in the source image. Going backwards like this means every
+                output pixel gets a value, so there are no holes. I treat integer coordinates as pixel
+                centers, so the valid source region is [0, <i>w</i>&minus;1] &times;
+                [0, <i>h</i>&minus;1]. Pixels that land outside it get an alpha of 0, and that alpha
+                channel is returned alongside the image so the blending step knows which pixels are
+                real.
+            </p>
+            <p>
+                The source location is almost never an integer, so I implemented two ways to sample
+                it. <b>Nearest neighbor</b> rounds to the closest pixel. <b>Bilinear</b> takes the four
+                surrounding pixels and weights each by how close it is.
+            </p>
+
+            <div class="eq-block" data-label="Bilinear Interpolation">
+                <div class="eq-stack compact">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi><mo>=</mo><mi>x</mi><mo>&#x2212;</mo><mo stretchy="false">&#x230A;</mo><mi>x</mi><mo stretchy="false">&#x230B;</mo><mo>,</mo><mspace width="1em"/><mi>b</mi><mo>=</mo><mi>y</mi><mo>&#x2212;</mo><mo stretchy="false">&#x230A;</mo><mi>y</mi><mo stretchy="false">&#x230B;</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>I</mi><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>a</mi><mo stretchy="false">)</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>b</mi><mo stretchy="false">)</mo><msub><mi>I</mi><mn>00</mn></msub><mo>+</mo><mi>a</mi><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>b</mi><mo stretchy="false">)</mo><msub><mi>I</mi><mn>01</mn></msub><mo>+</mo><mo stretchy="false">(</mo><mn>1</mn><mo>&#x2212;</mo><mi>a</mi><mo stretchy="false">)</mo><mi>b</mi><mspace width="0.1em"/><msub><mi>I</mi><mn>10</mn></msub><mo>+</mo><mi>a</mi><mi>b</mi><mspace width="0.1em"/><msub><mi>I</mi><mn>11</mn></msub></mrow></math>
+                </div>
+            </div>
+
+            <h3>Rectification</h3>
+            <p>
+                To test the warp before building mosaics, I rectified two photos of rectangular
+                objects taken at an angle. Since I only had one image and needed to compute the
+                homography, I needed to define corresponding points using information I knew about the
+                object in the image. For both the painting and computer screen, I clicked the four
+                corners and mapped them onto a rectangle with the aspect ratios of 1100&times;1400 and
+                1600&times;1000 respectively. Four points give an exactly determined system, so these
+                homographies hit the corners exactly.
+            </p>
+
+            <p class="group-label">Laptop Screen</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./web/comp_screen_original.jpg" alt="A laptop on a desk photographed from the side, its screen a tilted quadrilateral" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/comp_screen_nn.jpg" alt="The laptop screen warped into a flat rectangle, with the rest of the desk stretched toward the upper left" loading="lazy">
+                    <figcaption>Nearest Neighbor</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/comp_screen_bil.jpg" alt="The same rectified laptop screen using bilinear interpolation" loading="lazy">
+                    <figcaption>Bilinear</figcaption>
+                </figure>
+            </div>
+            <p>
+                After rectification, the laptop screen resembles a normal rectangle. Everything else got
+                distorted, especially the monitor behind it. This stretch is also why the output is so
+                large (5440&times;4408). The bounding box has to cover the whole warped image.
+            </p>
+
+            <p class="group-label">Painting</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="./web/portrait_mom_original.jpg" alt="A painting of a woman with roses hung on a wall, photographed from below and to the side" loading="lazy">
+                    <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/portrait_mom_nn.jpg" alt="The painting rectified into an upright rectangle, the wall around it warped into a trapezoid" loading="lazy">
+                    <figcaption>Nearest Neighbor</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/portrait_mom_bil.jpg" alt="The same rectified painting using bilinear interpolation" loading="lazy">
+                    <figcaption>Bilinear</figcaption>
+                </figure>
+            </div>
+            <p>
+                The painting looks perfect. It seems like I took the picture straight on instead of from
+                an angle.
+            </p>
+
+            <h3>Nearest Neighbor vs. Bilinear</h3>
+            <p>
+                At full size the two methods look the same, so here are 4&times; crops of the same
+                regions. The difference shows most where the warp magnifies the image, like the
+                monitor wallpaper in the laptop photo.
+            </p>
+            <div class="figures cols-4">
+                <figure>
+                    <img src="./web/comp_screen_zoom_nn.jpg" alt="Zoomed crop of the tree on the monitor wallpaper with blocky, stair-stepped edges" loading="lazy">
+                    <figcaption>Screen &middot; Nearest</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/comp_screen_zoom_bil.jpg" alt="The same zoomed crop with smooth gradients between colors" loading="lazy">
+                    <figcaption>Screen &middot; Bilinear</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/portrait_mom_zoom_nn.jpg" alt="Zoomed crop of the painted earring with jagged outlines" loading="lazy">
+                    <figcaption>Painting &middot; Nearest</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/portrait_mom_zoom_bil.jpg" alt="The same zoomed crop of the earring with smooth outlines" loading="lazy">
+                    <figcaption>Painting &middot; Bilinear</figcaption>
+                </figure>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Laptop Screen</p>
+                    <h4>3.46 s vs. 5.59 s</h4>
+                    <p>Nearest neighbor vs. bilinear, for a 5440&times;4408 output. Bilinear is 1.6&times; slower.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Painting</p>
+                    <h4>0.61 s vs. 1.10 s</h4>
+                    <p>Nearest neighbor vs. bilinear, for a 1938&times;2824 output. Bilinear is 1.8&times; slower.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Verdict</p>
+                    <h4>Bilinear</h4>
+                    <p>The extra time is small, and it removes the blocky edges, so I used it for my mosaics.</p>
+                </div>
+            </div>
+            <p>
+                Nearest neighbor copies whole source pixels, so where the warp stretches the image,
+                one pixel gets repeated into a visible block or diagonal edges turn into staircases.
+                This is seen in the monitor of the computer screen image and in the borderline of the
+                hair. Bilinear blends the four neighbors, so colors change smoothly and edges stay
+                clean. Bilinear is slower because each output pixel reads four source pixels and does
+                several multiplication operations instead of a single lookup. However, the gap is
+                under a factor of 2, so I used it in my mosaics to get better quality.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part A &middot; 4</p>
+            <h2>Blending the Images into a Mosaic</h2>
+            <p>
+                For each pair I leave image 2 unwarped and warp image 1 into its frame, then blend
+                the two in one shot:
+            </p>
+            <ol class="steps">
+                <li>Give each image a weight map that is highest at its center and falls off
+                    linearly to near 0 at its border, and attach it as an extra channel.</li>
+                <li>Warp image 1 (with its weight channel) by H using bilinear interpolation. The
+                    corners of the warped image give its offset in image 2&rsquo;s coordinates.</li>
+                <li>Size the canvas to fit both the warped image 1 and image 2, and paste each into
+                    its own copy of the canvas at the right offset.</li>
+                <li>At every pixel, average the two images weighted by alpha times the weight map.
+                    Where only one image exists, it is used as is.</li>
+            </ol>
+
+            <div class="eq-block" data-label="Feathered Weighted Average">
+                <div class="eq-stack compact">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>d</mi><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>=</mo><mo movablelimits="false">min</mo><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><mspace width="0.2em"/><mi>W</mi><mo>&#x2212;</mo><mn>1</mn><mo>&#x2212;</mo><mi>x</mi><mo>,</mo><mspace width="0.2em"/><mi>y</mi><mo>,</mo><mspace width="0.2em"/><mi>H</mi><mo>&#x2212;</mo><mn>1</mn><mo>&#x2212;</mo><mi>y</mi><mo stretchy="false">)</mo></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>&#x03C9;</mi><mo>=</mo><mfrac><mrow><mi>d</mi><mo>+</mo><mn>1</mn></mrow><mrow><msub><mi>d</mi><mtext>max</mtext></msub><mo>+</mo><mn>1</mn></mrow></mfrac></mrow></math>
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>I</mi><mo>=</mo><mfrac><mrow><msub><mi>&#x03B1;</mi><mn>1</mn></msub><msub><mi>&#x03C9;</mi><mn>1</mn></msub><msub><mi>I</mi><mn>1</mn></msub><mo>+</mo><msub><mi>&#x03B1;</mi><mn>2</mn></msub><msub><mi>&#x03C9;</mi><mn>2</mn></msub><msub><mi>I</mi><mn>2</mn></msub></mrow><mrow><msub><mi>&#x03B1;</mi><mn>1</mn></msub><msub><mi>&#x03C9;</mi><mn>1</mn></msub><mo>+</mo><msub><mi>&#x03B1;</mi><mn>2</mn></msub><msub><mi>&#x03C9;</mi><mn>2</mn></msub></mrow></mfrac></mrow></math>
+                </div>
+            </div>
+
+            <p>
+                I compare each blended mosaic against simply pasting image 2 on top of the warped
+                image 1. The pasted version has a hard seam. The weighted average spreads that change across the overlap, so it is much
+                harder to see.
+            </p>
+
+            <h3>Foothill Building 8</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_8_1_building_8_2_overwrite.jpg" alt="Foothill Building 8 mosaic with image 2 pasted on top, showing a vertical seam in the sky and on the path" loading="lazy">
+                    <figcaption>Overwrite</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_8_1_building_8_2_mosaic.jpg" alt="Blended Foothill Building 8 mosaic with the tree, railing, and building joined smoothly" loading="lazy">
+                    <figcaption>Weighted Average</figcaption>
+                </figure>
+            </div>
+            <p>
+                With overwriting, there is a clear vertical seam in the sky and across the asphalt
+                where image 2 begins. In the blended mosaic, the sky and the sidewalk fade smoothly into each other.
+            </p>
+
+            <h3>Foothill Building 9</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/building_9_1_building_9_2_overwrite.jpg" alt="Foothill Building 9 mosaic with image 2 pasted on top, showing a sharp change in sky color along a vertical line" loading="lazy">
+                    <figcaption>Overwrite</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/building_9_1_building_9_2_mosaic.jpg" alt="Blended Foothill Building 9 mosaic of the lit building, tree, and railing" loading="lazy">
+                    <figcaption>Weighted Average</figcaption>
+                </figure>
+            </div>
+            <p>
+                My phone seemed to have exposed these two Building 9 pictures differently, so the
+                overwrite has an obvious seam in the sky. However, blending smooths most of it out. It
+                seems that I may have translated the camera a bit while taking these pictures. The
+                railing closest to the camera has a motion blur effect which is the result of a
+                non-fixed center of projection.
+            </p>
+
+            <h3>The Stairs to My Dorm</h3>
+            <div class="figures">
+                <figure>
+                    <img src="./web/stairs_1_stairs_2_overwrite.jpg" alt="Mosaic of the stairs to my dorm with image 2 pasted on top, showing a vertical seam where the lighting changes" loading="lazy">
+                    <figcaption>Overwrite</figcaption>
+                </figure>
+                <figure>
+                    <img src="./web/stairs_1_stairs_2_mosaic.jpg" alt="Blended mosaic of the stairs to my dorm showing the evacuation map, the passage, and the staircase together" loading="lazy">
+                    <figcaption>Weighted Average</figcaption>
+                </figure>
+            </div>
+            <p>
+                The lamps changed the brightness between image 1 and image 2, so there is a clear seam
+                in the overwrite; however, once again blending hides the seam pretty well.
+            </p>
+        </section>
+
+        <!-- ================================================================== -->
+        <!-- PART B                                                             -->
+        <!-- ================================================================== -->
+
+        <section class="part chapter" id="part-b">
+            <p class="part-label">Part B</p>
+            <h2>Coming Soon</h2>
+            <p><span class="todo">Part B results will go here.</span></p>
+        </section>
+
+    </div>
+
+    <div class="back">
+        <a class="pill" href="../index.html">Back to Portfolio</a>
+    </div>
+</body>
+</html>

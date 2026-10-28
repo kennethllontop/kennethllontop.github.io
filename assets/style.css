@@ -671,3 +671,11 @@ figcaption math {
 
 /* MNIST sample grids: 10 digits across is plenty without filling the full column */
 .figures.wide.digits { max-width: 48rem; margin-inline: auto; }
+
+/*Project 4*/
+
+/* Equation stacks with wide matrices: a smaller size, and overflow that scrolls
+   from the left edge instead of being clipped on both sides by centering */
+.eq-stack.compact { align-items: safe center; }
+
+.eq-stack.compact .eq { font-size: clamp(0.95rem, 2.3vw, 1.45rem); }
