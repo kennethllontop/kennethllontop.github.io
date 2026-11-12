@@ -427,8 +427,365 @@
 
         <section class="part chapter" id="part-b">
             <p class="part-label">Part B</p>
-            <h2>Coming Soon</h2>
-            <p><span class="todo">Part B results will go here.</span></p>
+            <h2>Feature Matching for Autostitching</h2>
+            <p>
+                In Part B, I make the same kind of mosaics but without explicitly labeling the
+                corresponding points. I find the corners using the Harris Corner Detection Algorithm,
+                extract feature patches around those corners, match those patches between
+                the two images, and finally use RANSAC to estimate the homography from the matches.
+                Leveraging my code in Part A to generate mosaics, I show the result of the algorithm by
+                reusing the original two Foothill scenes and a new scene of the Airbnb I stayed in when
+                I went to CoRL with my research lab.
+            </p>
+
+            <div class="cards">
+                <div class="card">
+                    <p class="card-label">Corners</p>
+                    <h4>Harris + ANMS</h4>
+                    <p>About 7,000 Harris corners per image, thinned to 500 strong, well-spread ones.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Matching</p>
+                    <h4>Ratio Test, 0.2</h4>
+                    <p>A match is kept only if its best squared distance is under 0.2 of the second best.</p>
+                </div>
+                <div class="card">
+                    <p class="card-label">Homography</p>
+                    <h4>4-Point RANSAC</h4>
+                    <p>2,000 random tries, counting matches that land within 3 pixels.</p>
+                </div>
+            </div>
+
+            <p class="group-label">New Pair of Images for a Mosaic &middot; My Lab CoRL Airbnb Rental</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1.jpg" alt="Left view of a kitchen with white cabinets, pendant lights, and bar stools" loading="lazy">
+                    <figcaption>Image 1</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_2.jpg" alt="Right view of the same room, showing the fridge, a hallway, and an orange armchair" loading="lazy">
+                    <figcaption>Image 2</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 1</p>
+            <h2>Harris Corner Detection</h2>
+            <p>
+                I first converted each image to grayscale and ran the provided Harris corner detector at
+                a single scale. It keeps every local maximum of the corner response and drops anything
+                within 20 pixels of the border, which leaves roughly 6,400 to 7,500 corners per image.
+                The sheer number of corners is overwhelming. Noticeably the corners also piled up in
+                very textured areas like trees and asphalt.
+            </p>
+            <p>
+                By leveraging Adaptive non-maximal suppression (ANMS), I kept corners that are strong
+                and spread out. For each corner, I found its suppression radius which is the distance to
+                the nearest corner that is clearly stronger than it. Then I kept the 500 corners with
+                the largest radii. A strong corner in a busy area still gets suppressed if an even
+                stronger one is close by, so the kept corners cover the whole image.
+            </p>
+
+            <div class="eq-block" data-label="Suppression Radius">
+                <div class="eq-stack compact">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msub><mi>r</mi><mi>i</mi></msub><mo>=</mo><munder><mo movablelimits="false">min</mo><mi>j</mi></munder><mo>&#x2016;</mo><msub><mi mathvariant="bold">x</mi><mi>i</mi></msub><mo>&#x2212;</mo><msub><mi mathvariant="bold">x</mi><mi>j</mi></msub><mo>&#x2016;</mo><mo>,</mo><mspace width="1em"/><mtext>s.t.</mtext><mspace width="0.5em"/><mi>f</mi><mo stretchy="false">(</mo><msub><mi mathvariant="bold">x</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mo>&lt;</mo><msub><mi>c</mi><mtext>robust</mtext></msub><mi>f</mi><mo stretchy="false">(</mo><msub><mi mathvariant="bold">x</mi><mi>j</mi></msub><mo stretchy="false">)</mo><mo>,</mo><mspace width="1em"/><msub><mi>c</mi><mtext>robust</mtext></msub><mo>=</mo><mn>0.9</mn></mrow></math>
+                </div>
+            </div>
+
+            <p class="group-label">Foothill Building 8</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_harris.jpg" alt="Image 1 of the walkway outside Foothill Building 8 in grayscale, covered almost completely by red Harris corners" loading="lazy">
+                    <figcaption>Harris &middot; 6,881 Corners</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_anms.jpg" alt="The same image with 500 red corners spread evenly after ANMS" loading="lazy">
+                    <figcaption>ANMS &middot; 500 Corners</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Foothill Building 9</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_harris.jpg" alt="Image 1 of Foothill Building 9 seen from the stairway railing in grayscale, covered almost completely by red Harris corners" loading="lazy">
+                    <figcaption>Harris &middot; 6,791 Corners</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_anms.jpg" alt="The same image with 500 red corners spread evenly after ANMS" loading="lazy">
+                    <figcaption>ANMS &middot; 500 Corners</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">CoRL Airbnb</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_harris.jpg" alt="Image 1 of the kitchen and living room in grayscale, covered almost completely by red Harris corners" loading="lazy">
+                    <figcaption>Harris &middot; 7,159 Corners</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_anms.jpg" alt="The same image with 500 red corners spread evenly after ANMS" loading="lazy">
+                    <figcaption>ANMS &middot; 500 Corners</figcaption>
+                </figure>
+            </div>
+            <p>
+                Displaying every Harris corner, the image is almost solid red. After ANMS, the 500
+                corners I was interested in are spread throughout the image.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 2</p>
+            <h2>Feature Descriptor Extraction</h2>
+            <p>
+                For each of the 500 corners, I take the 40&times;40 window around it and sample it
+                down to an 8&times;8 patch. In order to avoid aliasing, I first blur the grayscale image
+                with a 13&times;13 Gaussian (&sigma; = 2), then keep every 5th pixel of the window. I
+                normalize the patch so it has a mean of 0 and a standard deviation of 1 meant to
+                control bias/gain. This causes the descriptor to not be impacted if one photo is
+                brighter than the other. A descriptor is the 8&times;8 patch around the corner.
+            </p>
+
+            <div class="eq-block" data-label="Bias/Gain Normalization">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi mathvariant="bold">d</mi><mo>=</mo><mfrac><mrow><mi mathvariant="bold">p</mi><mo>&#x2212;</mo><mi>&#x03BC;</mi></mrow><mi>&#x03C3;</mi></mfrac></mrow></math>
+                </div>
+            </div>
+
+            <p>
+                Each pair below shows a 40&times;40 window from the grayscale image (left) and its
+                normalized 8&times;8 descriptor (right), for six random corners in image 1. The
+                coordinates are (x, y).
+            </p>
+
+            <p class="group-label">Foothill Building 8</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_0.jpg" alt="40 by 40 window around the corner at (227, 529) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(227, 529)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_1.jpg" alt="40 by 40 window around the corner at (166, 227) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(166, 227)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_2.jpg" alt="40 by 40 window around the corner at (235, 423) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(235, 423)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_3.jpg" alt="40 by 40 window around the corner at (26, 411) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(26, 411)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_4.jpg" alt="40 by 40 window around the corner at (405, 462) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(405, 462)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_desc_5.jpg" alt="40 by 40 window around the corner at (439, 617) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(439, 617)</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Foothill Building 9</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_0.jpg" alt="40 by 40 window around the corner at (293, 321) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(293, 321)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_1.jpg" alt="40 by 40 window around the corner at (389, 201) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(389, 201)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_2.jpg" alt="40 by 40 window around the corner at (144, 602) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(144, 602)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_3.jpg" alt="40 by 40 window around the corner at (32, 169) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(32, 169)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_4.jpg" alt="40 by 40 window around the corner at (130, 232) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(130, 232)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_desc_5.jpg" alt="40 by 40 window around the corner at (420, 490) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(420, 490)</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">CoRL Airbnb</p>
+            <div class="figures cols-3">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_0.jpg" alt="40 by 40 window around the corner at (439, 405) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(439, 405)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_1.jpg" alt="40 by 40 window around the corner at (197, 154) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(197, 154)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_2.jpg" alt="40 by 40 window around the corner at (32, 135) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(32, 135)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_3.jpg" alt="40 by 40 window around the corner at (228, 378) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(228, 378)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_4.jpg" alt="40 by 40 window around the corner at (450, 56) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(450, 56)</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_desc_5.jpg" alt="40 by 40 window around the corner at (138, 39) next to its blocky 8 by 8 descriptor" loading="lazy">
+                    <figcaption>(138, 39)</figcaption>
+                </figure>
+            </div>
+            <p>
+                The descriptors are blurry versions of the windows, but they still keep the main
+                structure, like a dark railing bar or the edge of a window frame.
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 3</p>
+            <h2>Feature Matching</h2>
+            <p>
+                To match features, I compute the squared distance between every descriptor in image 1
+                and every descriptor in image 2. For each feature in image 1, I find its nearest
+                neighbor (1-NN) and second nearest neighbor (2-NN) in image 2. Following Lowe&rsquo;s
+                ratio test, I keep the match only when the best candidate is much better than the
+                second best. If two candidates look about the same, the match is ambiguous and gets
+                thrown out. I chose a threshold of 0.2 based on the results in the paper.
+            </p>
+
+            <div class="eq-block" data-label="Lowe&rsquo;s Ratio Test">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mfrac><msub><mi>e</mi><mtext>1-NN</mtext></msub><msub><mi>e</mi><mtext>2-NN</mtext></msub></mfrac><mo>&lt;</mo><mn>0.2</mn></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_matches.jpg" alt="Image 1 and image 2 of the walkway outside Foothill Building 8 side by side, with colored lines joining 30 matched features" loading="lazy">
+                    <figcaption>Foothill Building 8 &middot; 30 Matches</figcaption>
+                </figure>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_matches.jpg" alt="Image 1 and image 2 of Foothill Building 9 seen from the stairway railing side by side, with colored lines joining 30 matched features" loading="lazy">
+                    <figcaption>Foothill Building 9 &middot; 30 Matches</figcaption>
+                </figure>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_matches.jpg" alt="Image 1 and image 2 of the kitchen and living room side by side, with colored lines joining 25 matched features" loading="lazy">
+                    <figcaption>CoRL Airbnb &middot; 25 Matches</figcaption>
+                </figure>
+            </div>
+            <p>
+                Out of 500 features per image, only 25 to 30 pass the ratio test. The lines are almost
+                parallel and seem to be matching correctly. The main struggle appears to be in the
+                CoRL Airbnb scene (in the top right wall).
+            </p>
+        </section>
+
+        <section class="part">
+            <p class="part-label">Part B &middot; 4</p>
+            <h2>RANSAC for Robust Homography</h2>
+            <p>
+                Even one bad match can throw off a least squares homography, so I use 4-point RANSAC
+                to find the matches that agree with each other:
+            </p>
+            <ol class="steps">
+                <li>Pick 4 random matches and compute the homography that fits them exactly, using
+                    my computeH function from Part A.</li>
+                <li>Send every matched point in image 1 through that H, and count the matches that
+                    land within 3 pixels of their partner in image 2. These are the inliers.</li>
+                <li>Repeat 2,000 times and keep the largest set of inliers.</li>
+                <li>Recompute H with least squares on all of the inliers.</li>
+            </ol>
+
+            <div class="eq-block" data-label="Inlier Test">
+                <div class="eq-stack">
+                    <math class="eq" display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mo>&#x2016;</mo><mi>H</mi><msub><mi mathvariant="bold">p</mi><mi>i</mi></msub><mo>&#x2212;</mo><msubsup><mi mathvariant="bold">p</mi><mi>i</mi><mo>&#x2032;</mo></msubsup><mo>&#x2016;</mo><mo>&lt;</mo><mn>3</mn><mspace width="0.3em"/><mtext>px</mtext></mrow></math>
+                </div>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_inliers.jpg" alt="The matches of the walkway outside Foothill Building 8 that RANSAC kept as inliers" loading="lazy">
+                    <figcaption>Foothill Building 8 &middot; 30 of 30 Inliers</figcaption>
+                </figure>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_inliers.jpg" alt="The matches of Foothill Building 9 seen from the stairway railing that RANSAC kept as inliers" loading="lazy">
+                    <figcaption>Foothill Building 9 &middot; 30 of 30 Inliers</figcaption>
+                </figure>
+            </div>
+
+            <div class="figures single">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_inliers.jpg" alt="The matches of the kitchen and living room that RANSAC kept as inliers" loading="lazy">
+                    <figcaption>CoRL Airbnb &middot; 22 of 25 Inliers</figcaption>
+                </figure>
+            </div>
+            <p>
+                For both Foothill pairs, all 30 matches were inliers, since the ratio test had already
+                removed the bad ones. For the CoRL Airbnb pair, RANSAC threw out 3 of the 25 matches
+                that did not agree with the best homography. RANSAC picks its samples at random and I
+                did not fix a seed, so these counts can change from run to run.
+            </p>
+
+            <h3>Manual vs. Automatic</h3>
+            <p>
+                Here are the mosaics using the homography from my clicked points next to the
+                ones using the automatic homography. Both are blended with the same weighted average.
+            </p>
+
+            <p class="group-label">Foothill Building 8</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_building_8_2_manual.jpg" alt="Mosaic of the walkway outside Foothill Building 8 made from hand-clicked points" loading="lazy">
+                    <figcaption>Manual</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_8_1_building_8_2_auto.jpg" alt="Mosaic of the walkway outside Foothill Building 8 made from automatically matched features" loading="lazy">
+                    <figcaption>Automatic</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">Foothill Building 9</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_building_9_2_manual.jpg" alt="Mosaic of Foothill Building 9 seen from the stairway railing made from hand-clicked points" loading="lazy">
+                    <figcaption>Manual</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/building_9_1_building_9_2_auto.jpg" alt="Mosaic of Foothill Building 9 seen from the stairway railing made from automatically matched features" loading="lazy">
+                    <figcaption>Automatic</figcaption>
+                </figure>
+            </div>
+
+            <p class="group-label">CoRL Airbnb</p>
+            <div class="figures">
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_indoor_house_2_manual.jpg" alt="Mosaic of the kitchen and living room made from hand-clicked points" loading="lazy">
+                    <figcaption>Manual</figcaption>
+                </figure>
+                <figure>
+                    <img src="../proj_4b/web/indoor_house_1_indoor_house_2_auto.jpg" alt="Mosaic of the kitchen and living room made from automatically matched features" loading="lazy">
+                    <figcaption>Automatic</figcaption>
+                </figure>
+            </div>
+            <p>
+                The automatic mosaics compare positively to the manual ones. The outlines of the mosaics
+                are a little different because the two homographies are not identical.
+            </p>
         </section>
 
     </div>

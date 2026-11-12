@@ -8,8 +8,9 @@ proj_3/part_a/*.ipynb
 proj_3/part_b/*.ipynb
 proj_3/submission/
 proj_4/submission/
+proj_4b/submission/
 
 # Code for projects 0-4 stays local (submitted separately, not published on the site)
-proj_[0-4]/**/*.py
-proj_[0-4]/**/*.ipynb
-proj_[0-4]/submission.zip
+proj_[0-4]*/**/*.py
+proj_[0-4]*/**/*.ipynb
+proj_[0-4]*/submission.zip
